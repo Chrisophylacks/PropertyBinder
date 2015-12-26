@@ -21,6 +21,11 @@ namespace PropertyBinder.Engine
         {
         }
 
+        public bool HasBindingActions
+        {
+            get { return _itemNode != null && _itemNode.HasBindingActions; }
+        }
+
         public void AddAction(Action<TContext> action)
         {
             _bindingAction = _bindingAction.CombineUnique(action);
@@ -33,17 +38,12 @@ namespace PropertyBinder.Engine
 
         public IBindingNode<TContext> GetItemNode()
         {
-            if (_itemNode == null)
-            {
-                _itemNode = new BindingNode<TContext, TItem, TItem>(_ => _);
-            }
-
-            return _itemNode;
+            return _itemNode ?? (_itemNode = new BindingNode<TContext, TItem, TItem>(_ => _));
         }
 
         public IObjectWatcher<TCollection> CreateWatcher(TContext context)
         {
-            return new CollectionWatcher<TContext, TCollection, TItem>(context, _bindingAction, _itemNode);
+            return new CollectionWatcher<TContext, TCollection, TItem>(context, _bindingAction, HasBindingActions ? _itemNode : null);
         }
 
         public ICollectionBindingNode<TNewContext, TCollection> CloneForDerivedType<TNewContext>()

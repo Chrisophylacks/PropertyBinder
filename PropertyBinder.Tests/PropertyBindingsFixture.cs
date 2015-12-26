@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using NUnit.Framework;
@@ -18,6 +19,8 @@ namespace PropertyBinder.Tests
             _binder = new PropertyBinder<UniversalStub>();
             _stub = new UniversalStub();
         }
+
+        #region Simple bindings
 
         [Test]
         public void ShouldAssignBoundPropertyWhenAttached()
@@ -51,6 +54,34 @@ namespace PropertyBinder.Tests
             }
 
             _stub.String.ShouldBe("1");
+        }
+
+        [Test]
+        public void ShouldBindConditionalExpressions()
+        {
+            _binder.Bind(x => x.Flag ? x.Int.ToString() : "empty").To(x => x.String);
+            using (_binder.Attach(_stub))
+            {
+                _stub.String.ShouldBe("empty");
+
+                using (_stub.VerifyChangedOnce("String"))
+                {
+                    _stub.Flag = true;
+                }
+                _stub.String.ShouldBe("0");
+
+                using (_stub.VerifyChangedOnce("String"))
+                {
+                    _stub.Int = 1;
+                }
+                _stub.String.ShouldBe("1");
+
+                using (_stub.VerifyChangedOnce("String"))
+                {
+                    _stub.Flag = false;
+                }
+                _stub.String.ShouldBe("empty");
+            }
         }
 
         [Test]
@@ -127,6 +158,36 @@ namespace PropertyBinder.Tests
                     _stub.DateTime = new DateTime(2000, 1, 1);
                 }
                 _stub.Int.ShouldBe(2000);
+            }
+        }
+
+        [Test]
+        public void ShouldBindNestedStructProperties()
+        {
+            _binder.Bind(x => x.Pair.Value.String).To(x => x.String);
+            _stub.Pair = new KeyValuePair<string, UniversalStub>(string.Empty, new UniversalStub());
+
+            using (_binder.Attach(_stub))
+            {
+                _stub.String.ShouldBe(null);
+
+                using (_stub.VerifyChangedOnce("String"))
+                {
+                    _stub.Pair.Value.String = "a";
+                }
+                _stub.String.ShouldBe("a");
+
+                using (_stub.VerifyChangedOnce("String"))
+                {
+                    _stub.Pair = new KeyValuePair<string, UniversalStub>(string.Empty, new UniversalStub { String = "b" });
+                }
+                _stub.String.ShouldBe("b");
+
+                using (_stub.VerifyChangedOnce("String"))
+                {
+                    _stub.Pair.Value.String = "c";
+                }
+                _stub.String.ShouldBe("c");
             }
         }
 
@@ -234,6 +295,19 @@ namespace PropertyBinder.Tests
                 _stub.String2.ShouldBe("2");
             }
         }
+
+        [Test]
+        public void ShouldNotCrashIfAppliedWithoutRules()
+        {
+            Should.NotThrow(() =>
+            {
+                using (_binder.Attach(_stub))
+                {
+                }
+            });
+        }
+
+        #endregion
 
         #region Overrides
 
@@ -528,6 +602,48 @@ namespace PropertyBinder.Tests
                     item.Int = 3;
                 }
                 _stub.Int.ShouldBe(3);
+            }
+        }
+
+        [Test]
+        public void ShouldUnsubscribeFromRemovedItems()
+        {
+            _binder.Bind(x => string.Join(";", x.Collection.Select(s => s.String).ToArray())).To(x => x.String);
+            _stub.Collection =  new ObservableCollection<UniversalStub>();
+
+            var item1 = new UniversalStub { String = "1" };
+            var item2 = new UniversalStub { String = "2" };
+            _stub.Collection.Add(item1);
+            _stub.Collection.Add(item2);
+
+            using (_binder.Attach(_stub))
+            {
+                _stub.String.ShouldBe("1;2");
+                item1.SubscriptionsCount.ShouldBe(1);
+                item2.SubscriptionsCount.ShouldBe(1);
+
+                using (_stub.VerifyChangedOnce("String"))
+                {
+                    _stub.Collection.Remove(item1);
+                }
+                _stub.String.ShouldBe("2");
+                item1.SubscriptionsCount.ShouldBe(0);
+            }
+
+            item2.SubscriptionsCount.ShouldBe(0);
+        }
+
+        [Test]
+        public void ShouldNotSubscribeToCollectionItemsIfTheirPropertiesAreNotReferenced()
+        {
+            _binder.Bind(x => string.Join(";", x.Collection.Select(s => s.ToString()).ToArray())).To(x => x.String);
+            _stub.Collection = new ObservableCollection<UniversalStub>();
+            var item1 = new UniversalStub { String = "1" };
+            _stub.Collection.Add(item1);
+
+            using (_binder.Attach(_stub))
+            {
+                item1.SubscriptionsCount.ShouldBe(0);
             }
         }
 

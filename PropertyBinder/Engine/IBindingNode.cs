@@ -5,6 +5,8 @@ namespace PropertyBinder.Engine
 {
     internal interface IBindingNode<out TContext>
     {
+        bool HasBindingActions { get; }
+
         IBindingNode<TContext> GetSubNode(MemberInfo member);
 
         ICollectionBindingNode<TContext> GetCollectionNode(Type itemType);

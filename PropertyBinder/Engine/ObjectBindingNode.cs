@@ -28,19 +28,51 @@ namespace PropertyBinder.Engine
             _targetSelector = targetSelector;
         }
 
+        public bool HasBindingActions
+        {
+            get
+            {
+                if (_bindingActions.Count != 0)
+                {
+                    return true;
+                }
+
+                if (_subNodes != null && _subNodes.Values.Any(x => x.HasBindingActions))
+                {
+                    return true;
+                }
+
+                if (_collectionNode != null && _collectionNode.HasBindingActions)
+                {
+                    return true;
+                }
+
+                return false;
+            }
+        }
+
         public IBindingNode<TContext> GetSubNode(MemberInfo member)
         {
             var property = member as PropertyInfo;
+            string memberName;
             if (property != null)
             {
-                return GetOrCreateNode(property.Name, () => property.GetGetMethod(true).CreateDelegate(typeof(Func<,>).MakeGenericType(typeof(TNode), property.PropertyType)));
+                memberName = property.Name;
+                if (!typeof (TNode).IsValueType)
+                {
+                    return GetOrCreateNode(memberName, () => property.GetGetMethod(true).CreateDelegate(typeof (Func<,>).MakeGenericType(typeof (TNode), property.PropertyType)));
+                }
+            }
+            else
+            {
+                var field = (FieldInfo)member;
+                memberName = field.Name;
             }
 
-            var field = (FieldInfo)member;
-            return GetOrCreateNode(field.Name, () =>
+            return GetOrCreateNode(memberName, () =>
             {
                 var parameter = Expression.Parameter(typeof (TNode));
-                return Expression.Lambda(Expression.MakeMemberAccess(parameter, field), parameter).Compile();
+                return Expression.Lambda(Expression.MakeMemberAccess(parameter, member), parameter).Compile();
             });
         }
 

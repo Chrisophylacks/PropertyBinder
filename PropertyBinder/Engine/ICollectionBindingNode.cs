@@ -4,6 +4,8 @@ namespace PropertyBinder.Engine
 {
     internal interface ICollectionBindingNode<out TContext>
     {
+        bool HasBindingActions { get; }
+
         IBindingNode<TContext> GetItemNode();
 
         void AddAction(Action<TContext> action);

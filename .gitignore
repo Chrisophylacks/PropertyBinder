@@ -134,6 +134,7 @@ publish/
 packages/
 output/
 pack.cmd
+push.cmd
 
 # Windows Azure Build Output
 csx
