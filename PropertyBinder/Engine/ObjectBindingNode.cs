@@ -10,11 +10,11 @@ namespace PropertyBinder.Engine
     internal sealed class BindingNode<TContext, TParent, TNode> : IBindingNode<TContext, TParent>
     {
         private readonly Func<TParent, TNode> _targetSelector;
-        private readonly IDictionary<string, Action<TContext>> _bindingActions;
+        private readonly IDictionary<string, UniqueActionCollection<TContext>> _bindingActions;
         private IDictionary<string, IBindingNode<TContext, TNode>> _subNodes;
         private ICollectionBindingNode<TContext, TNode> _collectionNode;
 
-        private BindingNode(Func<TParent, TNode> targetSelector, IDictionary<string, IBindingNode<TContext, TNode>> subNodes, IDictionary<string, Action<TContext>> bindingActions, ICollectionBindingNode<TContext, TNode> collectionNode)
+        private BindingNode(Func<TParent, TNode> targetSelector, IDictionary<string, IBindingNode<TContext, TNode>> subNodes, IDictionary<string, UniqueActionCollection<TContext>> bindingActions, ICollectionBindingNode<TContext, TNode> collectionNode)
         {
             _targetSelector = targetSelector;
             _subNodes = subNodes;
@@ -23,7 +23,7 @@ namespace PropertyBinder.Engine
         }
 
         public BindingNode(Func<TParent, TNode> targetSelector)
-            : this(targetSelector, null, new Dictionary<string, Action<TContext>>(), null)
+            : this(targetSelector, null, new Dictionary<string, UniqueActionCollection<TContext>>(), null)
         {
             _targetSelector = targetSelector;
         }
@@ -96,39 +96,27 @@ namespace PropertyBinder.Engine
 
         public ICollectionBindingNode<TContext> GetCollectionNode(Type itemType)
         {
-            if (_collectionNode == null)
-            {
-                _collectionNode = (ICollectionBindingNode<TContext, TNode>) Activator.CreateInstance(typeof (CollectionBindingNode<,,>).MakeGenericType(typeof (TContext), typeof (TNode), itemType));
-            }
-
-            return _collectionNode;
+            return _collectionNode ?? (_collectionNode = (ICollectionBindingNode<TContext, TNode>) Activator.CreateInstance(typeof (CollectionBindingNode<,,>).MakeGenericType(typeof (TContext), typeof (TNode), itemType)));
         }
 
         public void AddAction(PropertyInfo property, Action<TContext> action)
         {
-            Action<TContext> currentAction;
-            if (_bindingActions.TryGetValue(property.Name, out currentAction))
+            UniqueActionCollection<TContext> currentAction;
+            if (!_bindingActions.TryGetValue(property.Name, out currentAction))
             {
-                _bindingActions[property.Name] = currentAction.CombineUnique(action);
+                _bindingActions[property.Name] = currentAction = new UniqueActionCollection<TContext>();
             }
-            else
-            {
-                _bindingActions[property.Name] = action;
-            }
+            currentAction.Add(action);
         }
 
         public void RemoveActionCascade(Action<TContext> action)
         {
             foreach (var pair in _bindingActions.ToArray())
             {
-                var newAction = pair.Value.RemoveUnique(action);
-                if (newAction == null)
+                pair.Value.Remove(action);
+                if (pair.Value.IsEmpty)
                 {
                     _bindingActions.Remove(pair.Key);
-                }
-                else
-                {
-                    _bindingActions[pair.Key] = newAction;
                 }
             }
 
@@ -161,7 +149,7 @@ namespace PropertyBinder.Engine
             return new BindingNode<TNewContext, TParent, TNode>(
                 _targetSelector,
                 _subNodes != null ? _subNodes.ToDictionary(x => x.Key, x => x.Value.CloneForDerivedType<TNewContext>()) : null,
-                _bindingActions.ToDictionary<KeyValuePair<string, Action<TContext>>, string, Action<TNewContext>>(x => x.Key, x => x.Value),
+                _bindingActions.ToDictionary(x => x.Key, x => x.Value.Clone<TNewContext>()),
                 _collectionNode != null ? _collectionNode.CloneForDerivedType<TNewContext>() : null);
         }
 

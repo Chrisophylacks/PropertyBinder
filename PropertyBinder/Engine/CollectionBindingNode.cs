@@ -7,17 +7,17 @@ namespace PropertyBinder.Engine
     internal sealed class CollectionBindingNode<TContext, TCollection, TItem> : ICollectionBindingNode<TContext, TCollection>
         where TCollection : class, IEnumerable<TItem>
     {
+        private readonly UniqueActionCollection<TContext> _bindingAction;
         private IBindingNode<TContext, TItem> _itemNode;
-        private Action<TContext> _bindingAction;
 
-        private CollectionBindingNode(Action<TContext> bindingAction, IBindingNode<TContext, TItem> itemNode)
+        private CollectionBindingNode(UniqueActionCollection<TContext> bindingAction, IBindingNode<TContext, TItem> itemNode)
         {
             _bindingAction = bindingAction;
             _itemNode = itemNode;
         }
 
         public CollectionBindingNode()
-            : this(null, null)
+            : this(new UniqueActionCollection<TContext>(), null)
         {
         }
 
@@ -28,12 +28,12 @@ namespace PropertyBinder.Engine
 
         public void AddAction(Action<TContext> action)
         {
-            _bindingAction = _bindingAction.CombineUnique(action);
+            _bindingAction.Add(action);
         }
 
         public void RemoveActionCascade(Action<TContext> action)
         {
-            _bindingAction = _bindingAction.RemoveUnique(action);
+            _bindingAction.Remove(action);
         }
 
         public IBindingNode<TContext> GetItemNode()
@@ -49,7 +49,7 @@ namespace PropertyBinder.Engine
         public ICollectionBindingNode<TNewContext, TCollection> CloneForDerivedType<TNewContext>()
             where TNewContext : class, TContext
         {
-            return new CollectionBindingNode<TNewContext, TCollection, TItem>(_bindingAction, _itemNode != null ? _itemNode.CloneForDerivedType<TNewContext>() : null);
+            return new CollectionBindingNode<TNewContext, TCollection, TItem>(_bindingAction.Clone<TNewContext>(), _itemNode != null ? _itemNode.CloneForDerivedType<TNewContext>() : null);
         }
     }
 }

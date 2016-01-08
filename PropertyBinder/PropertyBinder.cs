@@ -11,12 +11,11 @@ namespace PropertyBinder
     public sealed class PropertyBinder<TContext>
         where TContext : class
     {
-        private readonly IDictionary<string, Action<TContext>> _keyedActions;
+        private readonly IDictionary<string, List<Action<TContext>>> _keyedActions;
         private readonly IBindingNode<TContext, TContext> _rootNode;
+        private readonly UniqueActionCollection<TContext> _attachActions;
 
-        private Action<TContext> _attachActions;
-
-        private PropertyBinder(IBindingNode<TContext, TContext> rootNode, IDictionary<string, Action<TContext>> keyedActions, Action<TContext> attachActions)
+        private PropertyBinder(IBindingNode<TContext, TContext> rootNode, IDictionary<string, List<Action<TContext>>> keyedActions, UniqueActionCollection<TContext> attachActions)
         {
             _rootNode = rootNode;
             _keyedActions = keyedActions;
@@ -24,14 +23,14 @@ namespace PropertyBinder
         }
 
         public PropertyBinder()
-            : this(new BindingNode<TContext, TContext, TContext>(x => x), new Dictionary<string, Action<TContext>>(), null)
+            : this(new BindingNode<TContext, TContext, TContext>(x => x), new Dictionary<string, List<Action<TContext>>>(), new UniqueActionCollection<TContext>())
         {
         }
 
         public PropertyBinder<TNewContext> Clone<TNewContext>()
             where TNewContext : class, TContext
         {
-            return new PropertyBinder<TNewContext>(_rootNode.CloneForDerivedType<TNewContext>(), _keyedActions.ToDictionary<KeyValuePair<string, Action<TContext>>, string, Action<TNewContext>>(x => x.Key, x => x.Value), _attachActions);
+            return new PropertyBinder<TNewContext>(_rootNode.CloneForDerivedType<TNewContext>(), _keyedActions.ToDictionary(x => x.Key, x => new List<Action<TNewContext>>(x.Value)), _attachActions.Clone<TNewContext>());
         }
 
         public PropertyBinder<TContext> Clone()
@@ -43,36 +42,27 @@ namespace PropertyBinder
         {
             if (!string.IsNullOrEmpty(key))
             {
+                List<Action<TContext>> existingActions;
+                if (!_keyedActions.TryGetValue(key, out existingActions))
+                {
+                    _keyedActions.Add(key, existingActions = new List<Action<TContext>>());
+                }
+
                 if (canOverride)
                 {
-                    // replace action
-                    Action<TContext> existingAction;
-                    if (_keyedActions.TryGetValue(key, out existingAction))
+                    foreach (var action in existingActions)
                     {
-                        _attachActions = _attachActions.RemoveUnique(existingAction);
-                        _rootNode.RemoveActionCascade(existingAction);
+                        _attachActions.Remove(action);
+                        _rootNode.RemoveActionCascade(action);
                     }
+                }
 
-                    _keyedActions[key] = bindingAction;
-                }
-                else
-                {
-                    // combine action
-                    Action<TContext> existingAction;
-                    if (_keyedActions.TryGetValue(key, out existingAction))
-                    {
-                        _keyedActions[key] = existingAction.CombineUnique(bindingAction);
-                    }
-                    else
-                    {
-                        _keyedActions.Add(key, bindingAction);
-                    }
-                }
+                existingActions.Add(bindingAction);
             }
 
             if (runOnAttach)
             {
-                _attachActions = _attachActions.CombineUnique(bindingAction);
+                _attachActions.Add(bindingAction);
             }
 
             foreach (var expr in triggerExpressions)
@@ -83,12 +73,16 @@ namespace PropertyBinder
 
         internal void RemoveRule(string key)
         {
-            Action<TContext> existingAction;
-            if (_keyedActions.TryGetValue(key, out existingAction))
+            List<Action<TContext>> existingActions;
+            if (_keyedActions.TryGetValue(key, out existingActions))
             {
-                _attachActions = _attachActions.RemoveUnique(existingAction);
+                foreach (var action in existingActions)
+                {
+                    _attachActions.Remove(action);
+                    _rootNode.RemoveActionCascade(action);
+                }
+
                 _keyedActions.Remove(key);
-                _rootNode.RemoveActionCascade(existingAction);
             }
         }
 
@@ -96,7 +90,7 @@ namespace PropertyBinder
         {
             if (_attachActions != null)
             {
-                _attachActions(context);
+                _attachActions.Execute(context);
             }
 
             var watcher = _rootNode.CreateWatcher(context);

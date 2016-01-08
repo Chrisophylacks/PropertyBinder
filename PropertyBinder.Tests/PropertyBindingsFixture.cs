@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Xml.Schema;
 using NUnit.Framework;
 using Shouldly;
 
@@ -480,6 +481,32 @@ namespace PropertyBinder.Tests
                     _stub.Flag = true;
                 }
                 _stub.String2.ShouldBe("True");
+            }
+        }
+
+        [Test]
+        public void ClonedBindersShouldCorrectlyMixDerivedActionsWithBaseOnes()
+        {
+            _binder.Bind(x => x.Int.ToString()).To(x => x.String);
+
+            var binder2 = _binder.Clone<UniversalStubEx>();
+            binder2.Bind(x => x.Int.ToString()).To(x => x.String3);
+
+            var stub = new UniversalStubEx();
+
+            using (binder2.Attach(stub))
+            {
+                stub.String.ShouldBe("0");
+                stub.String3.ShouldBe("0");
+
+                using (stub.VerifyChangedOnce("String"))
+                using (stub.VerifyChangedOnce("String3"))
+                {
+                    stub.Int = 1;
+                }
+
+                stub.String.ShouldBe("1");
+                stub.String3.ShouldBe("1");
             }
         }
 

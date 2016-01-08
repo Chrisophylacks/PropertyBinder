@@ -7,7 +7,7 @@ using System.Windows.Input;
 
 namespace PropertyBinder.Tests
 {
-    internal sealed class UniversalStub : INotifyPropertyChanged
+    internal class UniversalStub : INotifyPropertyChanged
     {
         public UniversalStub()
         {
@@ -51,7 +51,7 @@ namespace PropertyBinder.Tests
 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        private void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             var handler = PropertyChanged;
             if (handler != null)

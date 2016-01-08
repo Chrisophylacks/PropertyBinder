@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
+using PropertyBinder.Helpers;
 
 namespace PropertyBinder.Engine
 {
@@ -12,9 +13,9 @@ namespace PropertyBinder.Engine
         private readonly IDictionary<TItem, IObjectWatcher<TItem>> _attachedItems = new Dictionary<TItem, IObjectWatcher<TItem>>();
         protected readonly TContext _bindingContext;
         protected TCollection _target;
-        protected Action<TContext> _action;
+        protected UniqueActionCollection<TContext> _action;
 
-        public CollectionWatcher(TContext bindingContext, Action<TContext> action, IBindingNode<TContext, TItem> itemNode)
+        public CollectionWatcher(TContext bindingContext, UniqueActionCollection<TContext> action, IBindingNode<TContext, TItem> itemNode)
         {
             _bindingContext = bindingContext;
             _action = action;
@@ -54,7 +55,7 @@ namespace PropertyBinder.Engine
         {
             if (_action != null)
             {
-                _action(_bindingContext);
+                _action.Execute(_bindingContext);
             }
 
             if (_itemNode != null)
