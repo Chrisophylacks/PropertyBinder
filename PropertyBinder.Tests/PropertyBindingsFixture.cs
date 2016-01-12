@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Xml.Schema;
 using NUnit.Framework;
 using Shouldly;
 
@@ -306,6 +305,18 @@ namespace PropertyBinder.Tests
                 {
                 }
             });
+        }
+
+        [Test]
+        public void ShouldNotCrashWhenBindingStaticMembers()
+        {
+            _binder.Bind(x => Environment.ProcessorCount).To(x => x.Int);
+            _binder.Bind(x => String.Empty).To(x => x.String);
+            using (_binder.Attach(_stub))
+            {
+                _stub.Int.ShouldBe(Environment.ProcessorCount);
+                _stub.String.ShouldBe(string.Empty);
+            }
         }
 
         #endregion

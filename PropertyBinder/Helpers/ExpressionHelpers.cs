@@ -14,6 +14,11 @@ namespace PropertyBinder.Helpers
             var expr = node;
             while (true)
             {
+                if (expr == null)
+                {
+                    return null;
+                }
+
                 if (expr.NodeType == ExpressionType.Parameter && expr.Type == parameterType)
                 {
                     list.Reverse();
