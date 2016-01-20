@@ -12,10 +12,10 @@ namespace PropertyBinder
         where TContext : class
     {
         private readonly IDictionary<string, List<Action<TContext>>> _keyedActions;
-        private readonly IBindingNode<TContext, TContext> _rootNode;
+        private readonly IBindingNodeRoot<TContext> _rootNode;
         private readonly UniqueActionCollection<TContext> _attachActions;
 
-        private PropertyBinder(IBindingNode<TContext, TContext> rootNode, IDictionary<string, List<Action<TContext>>> keyedActions, UniqueActionCollection<TContext> attachActions)
+        private PropertyBinder(IBindingNodeRoot<TContext> rootNode, IDictionary<string, List<Action<TContext>>> keyedActions, UniqueActionCollection<TContext> attachActions)
         {
             _rootNode = rootNode;
             _keyedActions = keyedActions;
@@ -23,14 +23,14 @@ namespace PropertyBinder
         }
 
         public PropertyBinder()
-            : this(new BindingNode<TContext, TContext, TContext>(x => x), new Dictionary<string, List<Action<TContext>>>(), new UniqueActionCollection<TContext>())
+            : this(new BindingNodeRoot<TContext>(), new Dictionary<string, List<Action<TContext>>>(), new UniqueActionCollection<TContext>())
         {
         }
 
         public PropertyBinder<TNewContext> Clone<TNewContext>()
             where TNewContext : class, TContext
         {
-            return new PropertyBinder<TNewContext>(_rootNode.CloneForDerivedType<TNewContext>(), _keyedActions.ToDictionary(x => x.Key, x => new List<Action<TNewContext>>(x.Value)), _attachActions.Clone<TNewContext>());
+            return new PropertyBinder<TNewContext>(_rootNode.CloneRootForDerivedType<TNewContext>(), _keyedActions.ToDictionary(x => x.Key, x => new List<Action<TNewContext>>(x.Value)), _attachActions.Clone<TNewContext>());
         }
 
         public PropertyBinder<TContext> Clone()

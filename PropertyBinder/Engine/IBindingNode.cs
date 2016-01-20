@@ -21,7 +21,16 @@ namespace PropertyBinder.Engine
         IBindingNode<TNewContext, TParent> CloneForDerivedType<TNewContext>()
             where TNewContext : class, TContext;
 
+        IBindingNode<TNewContext, TNewContext> CloneSubRootForDerivedType<TNewContext>()
+            where TNewContext : class, TContext, TParent;
+
         IObjectWatcher<TParent> CreateWatcher(TContext context);
+    }
+
+    internal interface IBindingNodeRoot<TContext> : IBindingNode<TContext, TContext>
+    {
+        IBindingNodeRoot<TNewContext> CloneRootForDerivedType<TNewContext>()
+            where TNewContext : class, TContext;
     }
 
     internal interface IObjectWatcher<in TParent> : IDisposable

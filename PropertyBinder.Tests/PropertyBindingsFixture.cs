@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using NUnit.Framework;
 using Shouldly;
 
@@ -518,6 +519,26 @@ namespace PropertyBinder.Tests
 
                 stub.String.ShouldBe("1");
                 stub.String3.ShouldBe("1");
+            }
+        }
+
+        [Test]
+        public void ShouldBindNestedMembersOfDerivedType()
+        {
+            var binderEx = _binder.Clone<UniversalStubEx>();
+            binderEx.Bind(x => x.NestedEx.Int).To(x => x.Int);
+
+            var stub = new UniversalStubEx { NestedEx = new UniversalStubEx { Int = 1 } };
+
+            using (binderEx.Attach(stub))
+            {
+                stub.Int.ShouldBe(1);
+
+                using (stub.VerifyChangedOnce("Int"))
+                {
+                    stub.NestedEx.Int = 2;
+                }
+                stub.Int.ShouldBe(2);
             }
         }
 

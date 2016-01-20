@@ -7,14 +7,14 @@ using PropertyBinder.Helpers;
 
 namespace PropertyBinder.Engine
 {
-    internal sealed class BindingNode<TContext, TParent, TNode> : IBindingNode<TContext, TParent>
+    internal class BindingNode<TContext, TParent, TNode> : IBindingNode<TContext, TParent>
     {
-        private readonly Func<TParent, TNode> _targetSelector;
-        private readonly IDictionary<string, UniqueActionCollection<TContext>> _bindingActions;
-        private IDictionary<string, IBindingNode<TContext, TNode>> _subNodes;
-        private ICollectionBindingNode<TContext, TNode> _collectionNode;
+        protected readonly Func<TParent, TNode> _targetSelector;
+        protected readonly IDictionary<string, UniqueActionCollection<TContext>> _bindingActions;
+        protected IDictionary<string, IBindingNode<TContext, TNode>> _subNodes;
+        protected ICollectionBindingNode<TContext, TNode> _collectionNode;
 
-        private BindingNode(Func<TParent, TNode> targetSelector, IDictionary<string, IBindingNode<TContext, TNode>> subNodes, IDictionary<string, UniqueActionCollection<TContext>> bindingActions, ICollectionBindingNode<TContext, TNode> collectionNode)
+        protected BindingNode(Func<TParent, TNode> targetSelector, IDictionary<string, IBindingNode<TContext, TNode>> subNodes, IDictionary<string, UniqueActionCollection<TContext>> bindingActions, ICollectionBindingNode<TContext, TNode> collectionNode)
         {
             _targetSelector = targetSelector;
             _subNodes = subNodes;
@@ -153,6 +153,16 @@ namespace PropertyBinder.Engine
                 _collectionNode != null ? _collectionNode.CloneForDerivedType<TNewContext>() : null);
         }
 
+        public IBindingNode<TNewContext, TNewContext> CloneSubRootForDerivedType<TNewContext>()
+            where TNewContext : class, TContext, TParent
+        {
+            return new BindingNode<TNewContext, TNewContext, TNode>(
+                _targetSelector,
+                _subNodes != null ? _subNodes.ToDictionary(x => x.Key, x => x.Value.CloneForDerivedType<TNewContext>()) : null,
+                _bindingActions.ToDictionary(x => x.Key, x => x.Value.Clone<TNewContext>()),
+                _collectionNode != null ? _collectionNode.CloneForDerivedType<TNewContext>() : null);
+        }
+
         private IDictionary<string, IObjectWatcher<TNode>> CreateSubWatchers(TContext context)
         {
             var dict = _subNodes != null ? _subNodes.ToDictionary(x => x.Key, x => x.Value.CreateWatcher(context)) : null;
@@ -167,6 +177,29 @@ namespace PropertyBinder.Engine
             }
 
             return dict;
+        }
+    }
+
+    internal sealed class BindingNodeRoot<TContext> : BindingNode<TContext, TContext, TContext>, IBindingNodeRoot<TContext>
+    {
+        private BindingNodeRoot(Func<TContext, TContext> targetSelector, IDictionary<string, IBindingNode<TContext, TContext>> subNodes, IDictionary<string, UniqueActionCollection<TContext>> bindingActions, ICollectionBindingNode<TContext, TContext> collectionNode)
+            : base(targetSelector, subNodes, bindingActions, collectionNode)
+        {
+        }
+
+        public BindingNodeRoot()
+            : base(_ => _)
+        {
+        }
+
+        public IBindingNodeRoot<TNewContext> CloneRootForDerivedType<TNewContext>()
+            where TNewContext : class, TContext
+        {
+            return new BindingNodeRoot<TNewContext>(
+               _ => _,
+               _subNodes != null ? _subNodes.ToDictionary(x => x.Key, x => x.Value.CloneSubRootForDerivedType<TNewContext>()) : null,
+               _bindingActions.ToDictionary(x => x.Key, x => x.Value.Clone<TNewContext>()),
+               _collectionNode != null ? _collectionNode.CloneForDerivedType<TNewContext>() : null);
         }
     }
 }
