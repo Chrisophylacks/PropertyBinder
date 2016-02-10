@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using PropertyBinder.Visitors;
 
 namespace PropertyBinder.Helpers
 {
@@ -36,7 +37,7 @@ namespace PropertyBinder.Helpers
             }
         }
 
-        public static string GetTargetKey<T, TContext>(this Expression<Func<TContext, T>> targetExpression)
+        public static string GetTargetKey<TContext, T>(this Expression<Func<TContext, T>> targetExpression)
         {
             var body = targetExpression.Body as MemberExpression;
             if (body == null)
@@ -51,6 +52,11 @@ namespace PropertyBinder.Helpers
             }
 
             return string.Join(".", path.Select(x => x.Name).ToArray());
+        }
+
+        public static Expression GetBodyWithReplacedParameter<TContext, T>(this Expression<Func<TContext, T>> source, ParameterExpression parameter)
+        {
+            return new ReplaceParameterVisitor(source.Parameters[0], parameter).Visit(source.Body);
         }
     }
 }

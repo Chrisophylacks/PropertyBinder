@@ -38,7 +38,7 @@ namespace PropertyBinder
             return Clone<TContext>();
         }
 
-        internal void AddRule(Action<TContext> bindingAction, string key, bool runOnAttach, bool canOverride, IEnumerable<LambdaExpression> triggerExpressions)
+        internal void AddRule(Action<TContext> bindingAction, string key, bool runOnAttach, bool canOverride, IEnumerable<Expression> triggerExpressions)
         {
             if (!string.IsNullOrEmpty(key))
             {
@@ -67,7 +67,7 @@ namespace PropertyBinder
 
             foreach (var expr in triggerExpressions)
             {
-                new BindingExpressionVisitor<TContext>(_rootNode, expr.Parameters[0].Type, bindingAction).Visit(expr);
+                new BindingExpressionVisitor<TContext>(_rootNode, typeof(TContext), bindingAction).Visit(expr);
             }
         }
 

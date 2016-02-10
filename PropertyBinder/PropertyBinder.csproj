@@ -40,6 +40,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CommandRuleBinder.cs" />
+    <Compile Include="ConditionalRuleBuilder.cs" />
     <Compile Include="Engine\CollectionBindingNode.cs" />
     <Compile Include="Engine\CollectionWatcher.cs" />
     <Compile Include="Engine\ICollectionBindingNode.cs" />

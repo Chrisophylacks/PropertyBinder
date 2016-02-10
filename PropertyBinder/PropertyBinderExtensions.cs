@@ -23,5 +23,11 @@ namespace PropertyBinder
         {
             binder.RemoveRule(targetExpression.GetTargetKey());
         }
+
+        public static IConditionalRuleBuilderPhase1<T, TContext> BindIf<T, TContext>(this PropertyBinder<TContext> binder, Expression<Func<TContext, bool>> conditionalExpression, Expression<Func<TContext, T>> targetExpression)
+            where TContext : class
+        {
+            return new ConditionalRuleBuilder<T, TContext>(binder).ElseIf(conditionalExpression, targetExpression);
+        }
     }
 }

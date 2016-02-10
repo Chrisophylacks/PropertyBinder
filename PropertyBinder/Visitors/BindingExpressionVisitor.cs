@@ -85,12 +85,15 @@ namespace PropertyBinder.Visitors
                 {
                     if (arg2.NodeType == ExpressionType.Lambda)
                     {
-                        if (itemVisitor == null)
+                        var lambda = (LambdaExpression) arg2;
+                        if (lambda.Parameters.Count == 1 && lambda.Parameters[0].Type.IsAssignableFrom(collectionItemType))
                         {
-                            itemVisitor = new BindingExpressionVisitor<TContext>(collectionNode.GetItemNode(), collectionItemType, _bindingAction);
+                            if (itemVisitor == null)
+                            {
+                                itemVisitor = new BindingExpressionVisitor<TContext>(collectionNode.GetItemNode(), collectionItemType, _bindingAction);
+                            }
+                            itemVisitor.Visit(lambda.Body);
                         }
-
-                        itemVisitor.Visit(arg2);
                     }
                 }
             }

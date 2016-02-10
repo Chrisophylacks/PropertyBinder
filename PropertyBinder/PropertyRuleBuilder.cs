@@ -11,7 +11,7 @@ namespace PropertyBinder
     {
         private readonly PropertyBinder<TContext> _binder;
         private readonly Expression<Func<TContext, T>> _sourceExpression;
-        private readonly List<LambdaExpression> _dependencies = new List<LambdaExpression>();
+        private readonly List<Expression> _dependencies = new List<Expression>();
         private bool _runOnAttach = true;
         private bool _canOverride = true;
 
@@ -19,7 +19,7 @@ namespace PropertyBinder
         {
             _binder = binder;
             _sourceExpression = sourceExpression;
-            _dependencies.Add(_sourceExpression);
+            _dependencies.Add(_sourceExpression.Body);
         }
 
         public void To(Expression<Func<TContext, T>> targetExpression)
@@ -28,7 +28,7 @@ namespace PropertyBinder
 
             var assignment = Expression.Lambda<Action<TContext>>(
                 Expression.Assign(
-                    new ReplaceParameterVisitor(targetExpression.Parameters[0], contextParameter).Visit(targetExpression.Body),
+                    targetExpression.GetBodyWithReplacedParameter(contextParameter),
                     _sourceExpression.Body),
                 contextParameter);
 
@@ -38,7 +38,7 @@ namespace PropertyBinder
             var targetParameter = targetExpression.Parameters[0];
             if (targetParent != targetParameter)
             {
-                _dependencies.Add(Expression.Lambda(targetParent, targetParameter));
+                _dependencies.Add(targetParent);
             }
 
             AddRule(assignment.Compile(), key);
@@ -69,7 +69,7 @@ namespace PropertyBinder
 
         public PropertyRuleBuilder<T, TContext> WithDependency<TDependency>(Expression<Func<TContext, TDependency>> dependencyExpression)
         {
-            _dependencies.Add(dependencyExpression);
+            _dependencies.Add(dependencyExpression.Body);
             return this;
         }
 
