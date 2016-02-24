@@ -90,7 +90,7 @@ namespace PropertyBinder
                     dependencies.Add(targetParent);
                 }
 
-                AddRule(assignment, i == _clauses.Count ? key : null, dependencies);
+                _binder.AddRule(assignment, key, _runOnAttach, i == 0 && _canOverride, dependencies);
             }
         }
 
@@ -119,7 +119,7 @@ namespace PropertyBinder
                 var invokeExpression = Expression.IfThen(conditionExpression, innerExpression);
                 var invoke = Expression.Lambda<Action<TContext, Action<TContext, T>>>(invokeExpression, _contextParameter, actionParameter).Compile();
 
-                AddRule(ctx => invoke(ctx, action), null, new[] { invokeExpression } );
+                _binder.AddRule(ctx => invoke(ctx, action), null, _runOnAttach, false, new[] { invokeExpression });
             }
         }
 
@@ -133,11 +133,6 @@ namespace PropertyBinder
         {
             _canOverride = false;
             return this;
-        }
-
-        private void AddRule(Action<TContext> action, string key, IEnumerable<Expression> triggerExpressions)
-        {
-            _binder.AddRule(action, key, _runOnAttach, _canOverride, triggerExpressions);
         }
 
         private Expression CombineOr(IEnumerable<Expression> expressions)

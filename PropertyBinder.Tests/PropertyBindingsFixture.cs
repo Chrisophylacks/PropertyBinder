@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates;
+using Castle.DynamicProxy.Generators;
 using NUnit.Framework;
 using Shouldly;
 
@@ -320,6 +320,19 @@ namespace PropertyBinder.Tests
             }
         }
 
+        [Test]
+        public void ShouldInitializeCorrectlyWhenChainBindingOrderIsReversed()
+        {
+            _binder.Bind(x => x.String).To(x => x.String2);
+            _binder.Bind(x => x.Int.ToString()).To(x => x.String);
+
+            using (_binder.Attach(_stub))
+            {
+                _stub.String.ShouldBe("0");
+                _stub.String2.ShouldBe("0");
+            }
+        }
+
         #endregion
 
         #region Overrides
@@ -398,6 +411,18 @@ namespace PropertyBinder.Tests
             }
         }
 
+        [Theory]
+        public void ShouldAssignCanExecuteCorrectlyWhenAttached(bool canExecute)
+        {
+            _binder.BindCommand(x => { },  x => x.Flag).To(x => x.Command);
+            _stub.Flag = canExecute;
+
+            using (_binder.Attach(_stub))
+            {
+                _stub.Command.CanExecute(null).ShouldBe(canExecute);
+            }
+        }
+
         [Test]
         public void ShouldOverrideCommands()
         {
@@ -427,6 +452,27 @@ namespace PropertyBinder.Tests
             using (_binder.Attach(_stub))
             {
                 _stub.Command.ShouldBe(null);
+            }
+        }
+
+        [Test]
+        public void ShouldNotCrashIfCanExecuteConditionChangesBeforeCommandIsAssigned()
+        {
+            _binder.Bind(x => x.Int >= 0).To(x => x.Flag);
+            _binder.BindCommand(x => { }, x => x.Flag).To(x => x.Command);
+
+            Should.NotThrow(() =>
+            {
+                using (_binder.Attach(_stub))
+                {
+                }
+            });
+
+            using (_binder.Attach(_stub))
+            {
+                _stub.Command.CanExecute(null).ShouldBe(true);
+                _stub.Int = -1;
+                _stub.Command.CanExecute(null).ShouldBe(false);
             }
         }
 
@@ -806,6 +852,63 @@ namespace PropertyBinder.Tests
                 _stub.Int = 1;
                 callCount.ShouldBe(2);
                 lastValue.ShouldBe("a1");
+            }
+        }
+
+        [Test]
+        public void ShouldOverrideConditionalBindings()
+        {
+            _binder.BindIf(x => x.Flag, x => x.Int.ToString())
+                .Else(x => x.Int.ToString() + "1")
+                .To(x => x.String);
+
+            var binder = _binder.Clone<UniversalStubEx>();
+            binder.Bind(x => x.String2).To(x => x.String);
+            var stub = new UniversalStubEx();
+
+            using (binder.Attach(stub))
+            {
+                stub.String = null;
+
+                using (stub.VerifyNotChanged("String"))
+                {
+                    stub.Int = 1;
+                }
+
+                using (stub.VerifyChangedOnce("String"))
+                {
+                    stub.String2 = "a";
+                }
+                stub.String = "a";
+            }
+        }
+
+        [Test]
+        public void ShouldNotOverrideConditionalBindingsIfDoNotOverrideSpecified()
+        {
+            _binder.BindIf(x => x.Flag, x => x.Int.ToString())
+                .Else(x => x.Int.ToString() + "1")
+                .To(x => x.String);
+
+            var binder = _binder.Clone<UniversalStubEx>();
+            binder.Bind(x => x.String2).DoNotOverride().To(x => x.String);
+            var stub = new UniversalStubEx();
+
+            using (binder.Attach(stub))
+            {
+                stub.String = null;
+
+                using (stub.VerifyChangedOnce("String"))
+                {
+                    stub.Int = 1;
+                }
+                stub.String = "11";
+
+                using (stub.VerifyChangedOnce("String"))
+                {
+                    stub.String2 = "a";
+                }
+                stub.String = "a";
             }
         }
 

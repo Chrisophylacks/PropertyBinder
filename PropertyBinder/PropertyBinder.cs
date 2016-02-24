@@ -88,13 +88,14 @@ namespace PropertyBinder
 
         public IDisposable Attach(TContext context)
         {
+            var watcher = _rootNode.CreateWatcher(context);
+            watcher.Attach(context);
+
             if (_attachActions != null)
             {
                 _attachActions.Execute(context);
             }
 
-            var watcher = _rootNode.CreateWatcher(context);
-            watcher.Attach(context);
             return watcher;
         }
     }

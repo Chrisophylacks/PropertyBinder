@@ -56,6 +56,7 @@
     <Compile Include="PropertyBinderExtensions.cs" />
     <Compile Include="PropertyRuleBuilder.cs" />
     <Compile Include="Visitors\BindingExpressionVisitor.cs" />
+    <Compile Include="Visitors\NullPropagationVisitor.cs" />
     <Compile Include="Visitors\ReplaceParameterVisitor.cs" />
   </ItemGroup>
   <ItemGroup />

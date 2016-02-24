@@ -37,7 +37,7 @@ namespace PropertyBinder
             var key = destinationExpression.GetTargetKey();
 
             _binder.AddRule(ctx => assignCommand(ctx, new ActionCommand(ctx, _executeAction, canExecute)), key, true, true, Enumerable.Empty<LambdaExpression>());
-            _binder.AddRule(ctx => ((ActionCommand)getCommand(ctx)).UpdateCanExecute(), key, true, false, new[] { _canExecuteExpression });
+            _binder.AddRule(ctx => UpdateCanExecuteOnCommand(getCommand(ctx)), key, true, false, new[] { _canExecuteExpression });
         }
 
         private sealed class ActionCommand : ICommand
@@ -79,6 +79,15 @@ namespace PropertyBinder
             }
 
             public event EventHandler CanExecuteChanged;
+        }
+
+        private static void UpdateCanExecuteOnCommand(ICommand command)
+        {
+            var actionCommand = command as ActionCommand;
+            if (actionCommand != null)
+            {
+                actionCommand.UpdateCanExecute();
+            }
         }
     }
 }

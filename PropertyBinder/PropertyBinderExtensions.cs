@@ -29,5 +29,22 @@ namespace PropertyBinder
         {
             return new ConditionalRuleBuilder<T, TContext>(binder).ElseIf(conditionalExpression, targetExpression);
         }
+
+        /*
+        public static PropertyRuleBuilder<T, TContext> PropagateNullValues<T, TContext>(this PropertyRuleBuilder<T, TContext> ruleBuilder)
+            where T : class
+            where TContext : class
+        {
+            ruleBuilder.PropagateNullValues();
+            return ruleBuilder;
+        }
+
+        public static PropertyRuleBuilder<T?, TContext> PropagateNullValues<T, TContext>(this PropertyRuleBuilder<T?, TContext> ruleBuilder)
+            where T : struct
+            where TContext : class
+        {
+            ruleBuilder.PropagateNullValues();
+            return ruleBuilder;
+        }*/
     }
 }

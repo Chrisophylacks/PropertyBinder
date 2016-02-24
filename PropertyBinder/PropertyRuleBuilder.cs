@@ -14,6 +14,7 @@ namespace PropertyBinder
         private readonly List<Expression> _dependencies = new List<Expression>();
         private bool _runOnAttach = true;
         private bool _canOverride = true;
+        private bool _propagateNullValues;
 
         internal PropertyRuleBuilder(PropertyBinder<TContext> binder, Expression<Func<TContext, T>> sourceExpression)
         {
@@ -26,10 +27,16 @@ namespace PropertyBinder
         {
             var contextParameter = _sourceExpression.Parameters[0];
 
+            var source = _sourceExpression.Body;
+            if (_propagateNullValues)
+            {
+                source = new NullPropagationVisitor().Visit(source);
+            }
+
             var assignment = Expression.Lambda<Action<TContext>>(
                 Expression.Assign(
                     targetExpression.GetBodyWithReplacedParameter(contextParameter),
-                    _sourceExpression.Body),
+                    source),
                 contextParameter);
 
             var key = targetExpression.GetTargetKey();
@@ -71,6 +78,11 @@ namespace PropertyBinder
         {
             _dependencies.Add(dependencyExpression.Body);
             return this;
+        }
+
+        internal void PropagateNullValues()
+        {
+            _propagateNullValues = true;
         }
 
         private void AddRule(Action<TContext> action, string key)
