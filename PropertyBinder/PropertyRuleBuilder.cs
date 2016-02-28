@@ -30,7 +30,7 @@ namespace PropertyBinder
             var source = _sourceExpression.Body;
             if (_propagateNullValues)
             {
-                source = new NullPropagationVisitor().Visit(source);
+                source = new NullPropagationVisitor(_sourceExpression.Parameters[0]).Visit(source);
             }
 
             var assignment = Expression.Lambda<Action<TContext>>(
@@ -53,7 +53,19 @@ namespace PropertyBinder
 
         public void To(Action<TContext, T> action)
         {
-            var getValue = _sourceExpression.Compile();
+            Func<TContext, T> getValue;
+            if (_propagateNullValues)
+            {
+                getValue = Expression.Lambda<Func<TContext, T>>(
+                    new NullPropagationVisitor(_sourceExpression.Parameters[0]).Visit(_sourceExpression.Body),
+                    _sourceExpression.Parameters[0])
+                    .Compile();
+            }
+            else
+            {
+                getValue = _sourceExpression.Compile();
+            }
+
             AddRule(ctx => action(ctx, getValue(ctx)), null);
         }
 

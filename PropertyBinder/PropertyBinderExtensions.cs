@@ -30,7 +30,6 @@ namespace PropertyBinder
             return new ConditionalRuleBuilder<T, TContext>(binder).ElseIf(conditionalExpression, targetExpression);
         }
 
-        /*
         public static PropertyRuleBuilder<T, TContext> PropagateNullValues<T, TContext>(this PropertyRuleBuilder<T, TContext> ruleBuilder)
             where T : class
             where TContext : class
@@ -45,6 +44,6 @@ namespace PropertyBinder
         {
             ruleBuilder.PropagateNullValues();
             return ruleBuilder;
-        }*/
+        }
     }
 }

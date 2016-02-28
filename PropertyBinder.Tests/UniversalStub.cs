@@ -20,6 +20,8 @@ namespace PropertyBinder.Tests
 
         public int Int { get; set; }
 
+        public int? NullableInt { get; set; }
+
         public bool Flag { get; set; }
 
         public string String { get; set; }

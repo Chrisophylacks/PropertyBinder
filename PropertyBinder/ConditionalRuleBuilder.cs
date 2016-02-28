@@ -53,11 +53,6 @@ namespace PropertyBinder
 
         public void To(Expression<Func<TContext, T>> targetExpression)
         {
-            if (_defaultExpression == null)
-            {
-                throw new InvalidOperationException("Default expression not specified");
-            }
-
             var targetBody = targetExpression.GetBodyWithReplacedParameter(_contextParameter);
             var key = targetExpression.GetTargetKey();
 
@@ -67,6 +62,10 @@ namespace PropertyBinder
             for (int i = 0; i <= _clauses.Count; ++i)
             {
                 var sourceExpression = i == _clauses.Count ? _defaultExpression : _clauses[i].Item2;
+                if (sourceExpression == null)
+                {
+                    break;
+                }
 
                 var conditionExpression = i == _clauses.Count
                     ? Expression.Not(CombineOr(_clauses.Select(x => x.Item1)))
@@ -96,19 +95,20 @@ namespace PropertyBinder
 
         public void To(Action<TContext, T> action)
         {
-            if (_defaultExpression == null)
-            {
-                throw new InvalidOperationException("Default expression not specified");
-            }
-
             var actionParameter = Expression.Parameter(typeof(Action<TContext, T>));
 
             for (int i = 0; i <= _clauses.Count; ++i)
             {
+                var sourceExpression = i == _clauses.Count ? _defaultExpression : _clauses[i].Item2;
+                if (sourceExpression == null)
+                {
+                    break;
+                }
+
                 var innerExpression = Expression.Invoke(
                     actionParameter,
                     _contextParameter,
-                    i == _clauses.Count ? _defaultExpression : _clauses[i].Item2);
+                    sourceExpression);
 
                 var conditionExpression = i == _clauses.Count
                     ? Expression.Not(CombineOr(_clauses.Select(x => x.Item1))) 
