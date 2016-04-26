@@ -264,7 +264,7 @@ namespace PropertyBinder.Tests
         public void ShouldBindMultipleRulesForProperty()
         {
             _binder.Bind(x => x.Int.ToString()).To(x => x.String);
-            _binder.Bind(x => (x.Int * 2).ToString()).To(x => x.String2);
+            _binder.Bind(x => (x.Int * 2).ToString()).Debug(x => { }).To(x => x.String2);
 
             using (_binder.Attach(_stub))
             {
@@ -279,6 +279,20 @@ namespace PropertyBinder.Tests
 
                 _stub.String.ShouldBe("1");
                 _stub.String2.ShouldBe("2");
+            }
+        }
+
+        [Test]
+        public void ShouldBindToMethod()
+        {
+            _binder.Bind(x => x.String).To(x => x.Int++);
+
+            _stub.String = "a";
+            using (_binder.Attach(_stub))
+            {
+                _stub.Int.ShouldBe(1);
+                _stub.String = "b";
+                _stub.Int.ShouldBe(2);
             }
         }
 
@@ -315,6 +329,25 @@ namespace PropertyBinder.Tests
             {
                 _stub.String.ShouldBe("0");
                 _stub.String2.ShouldBe("0");
+            }
+        }
+
+        [Test]
+        public void ShouldSupportDebugging()
+        {
+            string lastStringValue = null;
+            _binder.Bind(x => x.String)
+                .Debug(x => { lastStringValue = x.String; })
+                .To(x => x.StringField);
+
+            _stub.String = "a";
+            using (_binder.Attach(_stub))
+            {
+                lastStringValue.ShouldBe("a");
+                _stub.StringField.ShouldBe("a");
+                _stub.String = "b";
+                lastStringValue.ShouldBe("b");
+                _stub.StringField.ShouldBe("b");
             }
         }
     }

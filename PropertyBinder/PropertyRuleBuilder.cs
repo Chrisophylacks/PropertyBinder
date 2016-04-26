@@ -15,6 +15,7 @@ namespace PropertyBinder
         private bool _runOnAttach = true;
         private bool _canOverride = true;
         private bool _propagateNullValues;
+        private Action<TContext> _debugAction;
 
         internal PropertyRuleBuilder(PropertyBinder<TContext> binder, Expression<Func<TContext, T>> sourceExpression)
         {
@@ -86,6 +87,12 @@ namespace PropertyBinder
             return this;
         }
 
+        public PropertyRuleBuilder<T, TContext> Debug(Action<TContext> debugAction)
+        {
+            _debugAction = debugAction;
+            return this;
+        }
+
         public PropertyRuleBuilder<T, TContext> WithDependency<TDependency>(Expression<Func<TContext, TDependency>> dependencyExpression)
         {
             _dependencies.Add(dependencyExpression.Body);
@@ -99,7 +106,7 @@ namespace PropertyBinder
 
         private void AddRule(Action<TContext> action, string key)
         {
-            _binder.AddRule(action, key, _runOnAttach, _canOverride, _dependencies);
+            _binder.AddRule(_debugAction == null ? action : _debugAction + action, key, _runOnAttach, _canOverride, _dependencies);
         }
     }
 }
