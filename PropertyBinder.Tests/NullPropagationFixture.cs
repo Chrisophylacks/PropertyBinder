@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using NUnit.Framework;
 using Shouldly;
 
@@ -65,6 +66,22 @@ namespace PropertyBinder.Tests
                 _stub.String = "";
                 _stub.NullableInt.ShouldBe(0);
                 _stub.String = null;
+                _stub.NullableInt.ShouldBe(null);
+            }
+        }
+
+        [Test]
+        public void ShouldPropagateNullsThroughStaticMethods()
+        {
+            _binder.Bind(x => (int?)Math.Pow(x.Nested.Int, 2)).PropagateNullValues().To(x => x.NullableInt);
+            using (_binder.Attach(_stub))
+            {
+                _stub.NullableInt.ShouldBe(null);
+                _stub.Nested = new UniversalStub { Int = 5 };
+                _stub.NullableInt.ShouldBe(25);
+                _stub.Nested = new UniversalStub { Int = 3 };
+                _stub.NullableInt.ShouldBe(9);
+                _stub.Nested = null;
                 _stub.NullableInt.ShouldBe(null);
             }
         }

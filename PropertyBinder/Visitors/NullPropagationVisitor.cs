@@ -34,7 +34,7 @@ namespace PropertyBinder.Visitors
 
         public override Expression Visit(Expression node)
         {
-            if (!IsNullable(node.Type))
+            if (node == null || !IsNullable(node.Type))
             {
                 return base.Visit(node);
             }
