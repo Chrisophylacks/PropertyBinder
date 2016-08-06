@@ -6,14 +6,14 @@ using PropertyBinder.Helpers;
 
 namespace PropertyBinder
 {
-    public sealed class CommandRuleBinder<TContext>
+    public sealed class CommandRuleBinder<TContext> : BindingRuleBase
         where TContext : class
     {
-        private readonly PropertyBinder<TContext> _binder;
+        private readonly Binder<TContext> _binder;
         private readonly Action<TContext> _executeAction;
         private readonly Expression<Func<TContext, bool>> _canExecuteExpression;
 
-        public CommandRuleBinder(PropertyBinder<TContext> binder, Action<TContext> executeAction, Expression<Func<TContext, bool>> canExecuteExpression)
+        public CommandRuleBinder(Binder<TContext> binder, Action<TContext> executeAction, Expression<Func<TContext, bool>> canExecuteExpression)
         {
             _binder = binder;
             _executeAction = executeAction;
@@ -34,10 +34,10 @@ namespace PropertyBinder
 
             var getCommand = destinationExpression.Compile();
             var canExecute = _canExecuteExpression.Compile();
-            var key = destinationExpression.GetTargetKey();
+            var key = _key ?? destinationExpression.GetTargetKey();
 
-            _binder.AddRule(ctx => assignCommand(ctx, new ActionCommand(ctx, _executeAction, canExecute)), key, true, true, Enumerable.Empty<LambdaExpression>());
-            _binder.AddRule(ctx => UpdateCanExecuteOnCommand(getCommand(ctx)), key, true, false, new[] { _canExecuteExpression });
+            _binder.Rules.AddRule(ctx => assignCommand(ctx, new ActionCommand(ctx, _executeAction, canExecute)), key, true, true, Enumerable.Empty<LambdaExpression>());
+            _binder.Rules.AddRule(ctx => UpdateCanExecuteOnCommand(getCommand(ctx)), key, true, false, new[] { _canExecuteExpression });
         }
 
         private sealed class ActionCommand : ICommand

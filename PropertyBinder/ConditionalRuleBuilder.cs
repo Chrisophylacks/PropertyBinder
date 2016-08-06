@@ -9,9 +9,6 @@ namespace PropertyBinder
     public interface IConditionalRuleBuilderPhase2<T, TContext>
         where TContext : class
     {
-        IConditionalRuleBuilderPhase2<T, TContext> DoNotRunOnAttach();
-        IConditionalRuleBuilderPhase2<T, TContext> DoNotOverride();
-
         void To(Expression<Func<TContext, T>> targetExpression);
         void To(Action<TContext, T> action);
     }
@@ -23,17 +20,15 @@ namespace PropertyBinder
         IConditionalRuleBuilderPhase2<T, TContext> Else(Expression<Func<TContext, T>> targetExpression);
     }
 
-    internal sealed class ConditionalRuleBuilder<T, TContext> : IConditionalRuleBuilderPhase1<T, TContext>
+    internal sealed class ConditionalRuleBuilder<T, TContext> : BindingRuleBase, IConditionalRuleBuilderPhase1<T, TContext>
         where TContext : class
     {
-        private readonly PropertyBinder<TContext> _binder;
+        private readonly Binder<TContext> _binder;
         private readonly List<Tuple<Expression, Expression>> _clauses = new List<Tuple<Expression, Expression>>();
         private Expression _defaultExpression;
         private readonly ParameterExpression _contextParameter;
-        private bool _runOnAttach = true;
-        private bool _canOverride = true;
 
-        public ConditionalRuleBuilder(PropertyBinder<TContext> binder)
+        public ConditionalRuleBuilder(Binder<TContext> binder)
         {
             _binder = binder;
             _contextParameter = Expression.Parameter(typeof (TContext));
@@ -54,7 +49,7 @@ namespace PropertyBinder
         public void To(Expression<Func<TContext, T>> targetExpression)
         {
             var targetBody = targetExpression.GetBodyWithReplacedParameter(_contextParameter);
-            var key = targetExpression.GetTargetKey();
+            var key = _key ?? targetExpression.GetTargetKey();
 
             var targetParent = ((MemberExpression)targetExpression.Body).Expression;
             var targetParameter = targetExpression.Parameters[0];
@@ -89,7 +84,7 @@ namespace PropertyBinder
                     dependencies.Add(targetParent);
                 }
 
-                _binder.AddRule(assignment, key, _runOnAttach, i == 0 && _canOverride, dependencies);
+                _binder.Rules.AddRule(assignment, key, _runOnAttach, i == 0 && _canOverride, dependencies);
             }
         }
 
@@ -119,20 +114,8 @@ namespace PropertyBinder
                 var invokeExpression = Expression.IfThen(conditionExpression, innerExpression);
                 var invoke = Expression.Lambda<Action<TContext, Action<TContext, T>>>(invokeExpression, _contextParameter, actionParameter).Compile();
 
-                _binder.AddRule(ctx => invoke(ctx, action), null, _runOnAttach, false, new[] { invokeExpression });
+                _binder.Rules.AddRule(ctx => invoke(ctx, action), _key, _runOnAttach, false, new[] { invokeExpression });
             }
-        }
-
-        public IConditionalRuleBuilderPhase2<T, TContext> DoNotRunOnAttach()
-        {
-            _runOnAttach = false;
-            return this;
-        }
-
-        public IConditionalRuleBuilderPhase2<T, TContext> DoNotOverride()
-        {
-            _canOverride = false;
-            return this;
         }
 
         private Expression CombineOr(IEnumerable<Expression> expressions)
