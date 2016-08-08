@@ -39,8 +39,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BindingRuleBase.cs" />
-    <Compile Include="BindingRules.cs" />
     <Compile Include="CommandRuleBinder.cs" />
     <Compile Include="ConditionalRuleBuilder.cs" />
     <Compile Include="Engine\CollectionBindingNode.cs" />
@@ -53,9 +51,8 @@
     <Compile Include="Helpers\ReferenceEqualityComparer.cs" />
     <Compile Include="Helpers\TypeExtensions.cs" />
     <Compile Include="Helpers\UniqueActionCollection.cs" />
-    <Compile Include="Binder.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PropertyBinder.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PropertyBinderExtensions.cs" />
     <Compile Include="PropertyRuleBuilder.cs" />
     <Compile Include="Visitors\BindingExpressionVisitor.cs" />

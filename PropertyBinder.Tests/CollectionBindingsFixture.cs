@@ -11,7 +11,7 @@ namespace PropertyBinder.Tests
         [Test]
         public void ShouldBindAggregatedCollectionOfValueTypes()
         {
-            var binder = new Binder<AggregatedCollection<int>>();
+            var binder = new PropertyBinder<AggregatedCollection<int>>();
             binder.Bind(x => x.Sum()).To(x => x.Aggregate);
             var collection = new AggregatedCollection<int>();
 

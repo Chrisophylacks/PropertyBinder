@@ -6,16 +6,18 @@ using PropertyBinder.Visitors;
 
 namespace PropertyBinder
 {
-    public sealed class PropertyRuleBuilder<T, TContext> : BindingRuleBase
+    public sealed class PropertyRuleBuilder<T, TContext>
         where TContext : class
     {
-        private readonly Binder<TContext> _binder;
+        private readonly PropertyBinder<TContext> _binder;
         private readonly Expression<Func<TContext, T>> _sourceExpression;
         private readonly List<Expression> _dependencies = new List<Expression>();
+        private bool _runOnAttach = true;
+        private bool _canOverride = true;
         private bool _propagateNullValues;
         private Action<TContext> _debugAction;
 
-        internal PropertyRuleBuilder(Binder<TContext> binder, Expression<Func<TContext, T>> sourceExpression)
+        internal PropertyRuleBuilder(PropertyBinder<TContext> binder, Expression<Func<TContext, T>> sourceExpression)
         {
             _binder = binder;
             _sourceExpression = sourceExpression;
@@ -38,7 +40,7 @@ namespace PropertyBinder
                     source),
                 contextParameter);
 
-            var key = _key ?? targetExpression.GetTargetKey();
+            var key = targetExpression.GetTargetKey();
 
             var targetParent = ((MemberExpression) targetExpression.Body).Expression;
             var targetParameter = targetExpression.Parameters[0];
@@ -65,12 +67,24 @@ namespace PropertyBinder
                 getValue = _sourceExpression.Compile();
             }
 
-            AddRule(ctx => action(ctx, getValue(ctx)), _key);
+            AddRule(ctx => action(ctx, getValue(ctx)), null);
         }
 
         public void To(Action<TContext> action)
         {
-            AddRule(action, _key);
+            AddRule(action, null);
+        }
+
+        public PropertyRuleBuilder<T, TContext> DoNotRunOnAttach()
+        {
+            _runOnAttach = false;
+            return this;
+        }
+
+        public PropertyRuleBuilder<T, TContext> DoNotOverride()
+        {
+            _canOverride = false;
+            return this;
         }
 
         public PropertyRuleBuilder<T, TContext> Debug(Action<TContext> debugAction)
@@ -92,7 +106,7 @@ namespace PropertyBinder
 
         private void AddRule(Action<TContext> action, string key)
         {
-            _binder.Rules.AddRule(_debugAction == null ? action : _debugAction + action, key, _runOnAttach, _canOverride, _dependencies);
+            _binder.AddRule(_debugAction == null ? action : _debugAction + action, key, _runOnAttach, _canOverride, _dependencies);
         }
     }
 }

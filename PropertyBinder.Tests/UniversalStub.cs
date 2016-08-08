@@ -38,18 +38,6 @@ namespace PropertyBinder.Tests
 
         public ObservableCollection<UniversalStub> Collection { get; set; }
 
-        public event EventHandler TestEvent;
-
-        public void RaiseTestEvent()
-        {
-            TestEvent?.Invoke(this, EventArgs.Empty);
-        }
-
-        public void HandleTestEvent(object sender, EventArgs args)
-        {
-            Int++;
-        }
-
         public int SubscriptionsCount
         {
             get
