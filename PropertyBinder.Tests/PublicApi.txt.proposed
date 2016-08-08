@@ -1,0 +1,74 @@
+[assembly: System.Runtime.InteropServices.ComVisibleAttribute(false)]
+[assembly: System.Runtime.InteropServices.GuidAttribute("f2800cdd-5dd1-4cbf-9808-fc1a00d67c1a")]
+[assembly: System.Runtime.Versioning.TargetFrameworkAttribute(".NETFramework,Version=v4.5", FrameworkDisplayName=".NET Framework 4.5")]
+
+namespace PropertyBinder
+{
+    
+    public sealed class CommandRuleBinder<TContext>
+        where TContext :  class
+    {
+        public CommandRuleBinder(PropertyBinder.PropertyBinder<TContext> binder, System.Action<TContext> executeAction, System.Linq.Expressions.Expression<System.Func<TContext, bool>> canExecuteExpression) { }
+        public PropertyBinder.CommandRuleBinder<TContext> OverrideKey(string bindingRuleKey) { }
+        public void To(System.Linq.Expressions.Expression<System.Func<TContext, System.Windows.Input.ICommand>> destinationExpression) { }
+    }
+    public interface IConditionalRuleBuilderPhase1<T, TContext> : PropertyBinder.IConditionalRuleBuilderPhase2<T, TContext>
+    
+        where TContext :  class
+    {
+        PropertyBinder.IConditionalRuleBuilderPhase2<T, TContext> Else(System.Linq.Expressions.Expression<System.Func<TContext, T>> targetExpression);
+        PropertyBinder.IConditionalRuleBuilderPhase1<T, TContext> ElseIf(System.Linq.Expressions.Expression<System.Func<TContext, bool>> conditionalExpression, System.Linq.Expressions.Expression<System.Func<TContext, T>> targetExpression);
+    }
+    public interface IConditionalRuleBuilderPhase2<T, TContext>
+    
+        where TContext :  class
+    {
+        PropertyBinder.IConditionalRuleBuilderPhase2<T, TContext> DoNotOverride();
+        PropertyBinder.IConditionalRuleBuilderPhase2<T, TContext> DoNotRunOnAttach();
+        PropertyBinder.IConditionalRuleBuilderPhase2<T, TContext> OverrideKey(string bindingRuleKey);
+        void To(System.Linq.Expressions.Expression<System.Func<TContext, T>> targetExpression);
+        void To(System.Action<TContext, T> action);
+    }
+    public sealed class PropertyBinder<TContext>
+        where TContext :  class
+    {
+        public PropertyBinder() { }
+        public System.IDisposable Attach(TContext context) { }
+        public PropertyBinder.PropertyBinder<TNewContext> Clone<TNewContext>()
+            where TNewContext :  class, TContext { }
+        public PropertyBinder.PropertyBinder<TContext> Clone() { }
+    }
+    public class static PropertyBinderExtensions
+    {
+        public static PropertyBinder.PropertyRuleBuilder<T, TContext> Bind<T, TContext>(this PropertyBinder.PropertyBinder<TContext> binder, System.Linq.Expressions.Expression<System.Func<TContext, T>> sourceExpression)
+        
+            where TContext :  class { }
+        public static PropertyBinder.CommandRuleBinder<TContext> BindCommand<TContext>(this PropertyBinder.PropertyBinder<TContext> binder, System.Action<TContext> executeAction, System.Linq.Expressions.Expression<System.Func<TContext, bool>> canExecuteExpression)
+            where TContext :  class { }
+        public static PropertyBinder.IConditionalRuleBuilderPhase1<T, TContext> BindIf<T, TContext>(this PropertyBinder.PropertyBinder<TContext> binder, System.Linq.Expressions.Expression<System.Func<TContext, bool>> conditionalExpression, System.Linq.Expressions.Expression<System.Func<TContext, T>> targetExpression)
+        
+            where TContext :  class { }
+        public static PropertyBinder.PropertyRuleBuilder<T, TContext> PropagateNullValues<T, TContext>(this PropertyBinder.PropertyRuleBuilder<T, TContext> ruleBuilder)
+            where T :  class
+            where TContext :  class { }
+        public static PropertyBinder.PropertyRuleBuilder<System.Nullable<T>, TContext> PropagateNullValues<T, TContext>(this PropertyBinder.PropertyRuleBuilder<System.Nullable<T>, TContext> ruleBuilder)
+            where T :  struct
+            where TContext :  class { }
+        public static void Unbind<T, TContext>(this PropertyBinder.PropertyBinder<TContext> binder, System.Linq.Expressions.Expression<System.Func<TContext, T>> targetExpression)
+        
+            where TContext :  class { }
+    }
+    public sealed class PropertyRuleBuilder<T, TContext>
+    
+        where TContext :  class
+    {
+        public PropertyBinder.PropertyRuleBuilder<T, TContext> Debug(System.Action<TContext> debugAction) { }
+        public PropertyBinder.PropertyRuleBuilder<T, TContext> DoNotOverride() { }
+        public PropertyBinder.PropertyRuleBuilder<T, TContext> DoNotRunOnAttach() { }
+        public PropertyBinder.PropertyRuleBuilder<T, TContext> OverrideKey(string bindingRuleKey) { }
+        public void To(System.Linq.Expressions.Expression<System.Func<TContext, T>> targetExpression) { }
+        public void To(System.Action<TContext, T> action) { }
+        public void To(System.Action<TContext> action) { }
+        public PropertyBinder.PropertyRuleBuilder<T, TContext> WithDependency<TDependency>(System.Linq.Expressions.Expression<System.Func<TContext, TDependency>> dependencyExpression) { }
+    }
+}

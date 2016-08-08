@@ -12,12 +12,19 @@ namespace PropertyBinder
         private readonly PropertyBinder<TContext> _binder;
         private readonly Action<TContext> _executeAction;
         private readonly Expression<Func<TContext, bool>> _canExecuteExpression;
+        private string _key;
 
         public CommandRuleBinder(PropertyBinder<TContext> binder, Action<TContext> executeAction, Expression<Func<TContext, bool>> canExecuteExpression)
         {
             _binder = binder;
             _executeAction = executeAction;
             _canExecuteExpression = canExecuteExpression;
+        }
+
+        public CommandRuleBinder<TContext> OverrideKey(string bindingRuleKey)
+        {
+            _key = bindingRuleKey;
+            return this;
         }
 
         public void To(Expression<Func<TContext, ICommand>> destinationExpression)
@@ -34,7 +41,7 @@ namespace PropertyBinder
 
             var getCommand = destinationExpression.Compile();
             var canExecute = _canExecuteExpression.Compile();
-            var key = destinationExpression.GetTargetKey();
+            var key = _key ?? destinationExpression.GetTargetKey();
 
             _binder.AddRule(ctx => assignCommand(ctx, new ActionCommand(ctx, _executeAction, canExecute)), key, true, true, Enumerable.Empty<LambdaExpression>());
             _binder.AddRule(ctx => UpdateCanExecuteOnCommand(getCommand(ctx)), key, true, false, new[] { _canExecuteExpression });

@@ -16,6 +16,7 @@ namespace PropertyBinder
         private bool _canOverride = true;
         private bool _propagateNullValues;
         private Action<TContext> _debugAction;
+        private string _key;
 
         internal PropertyRuleBuilder(PropertyBinder<TContext> binder, Expression<Func<TContext, T>> sourceExpression)
         {
@@ -40,7 +41,7 @@ namespace PropertyBinder
                     source),
                 contextParameter);
 
-            var key = targetExpression.GetTargetKey();
+            var key = _key ?? targetExpression.GetTargetKey();
 
             var targetParent = ((MemberExpression) targetExpression.Body).Expression;
             var targetParameter = targetExpression.Parameters[0];
@@ -67,12 +68,18 @@ namespace PropertyBinder
                 getValue = _sourceExpression.Compile();
             }
 
-            AddRule(ctx => action(ctx, getValue(ctx)), null);
+            AddRule(ctx => action(ctx, getValue(ctx)), _key);
         }
 
         public void To(Action<TContext> action)
         {
             AddRule(action, null);
+        }
+
+        public PropertyRuleBuilder<T, TContext> OverrideKey(string bindingRuleKey)
+        {
+            _key = bindingRuleKey;
+            return this;
         }
 
         public PropertyRuleBuilder<T, TContext> DoNotRunOnAttach()

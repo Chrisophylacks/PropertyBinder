@@ -11,6 +11,7 @@ namespace PropertyBinder
     {
         IConditionalRuleBuilderPhase2<T, TContext> DoNotRunOnAttach();
         IConditionalRuleBuilderPhase2<T, TContext> DoNotOverride();
+        IConditionalRuleBuilderPhase2<T, TContext> OverrideKey(string bindingRuleKey);
 
         void To(Expression<Func<TContext, T>> targetExpression);
         void To(Action<TContext, T> action);
@@ -32,6 +33,7 @@ namespace PropertyBinder
         private readonly ParameterExpression _contextParameter;
         private bool _runOnAttach = true;
         private bool _canOverride = true;
+        private string _key;
 
         public ConditionalRuleBuilder(PropertyBinder<TContext> binder)
         {
@@ -51,10 +53,16 @@ namespace PropertyBinder
             return this;
         }
 
+        public IConditionalRuleBuilderPhase2<T, TContext> OverrideKey(string bindingRuleKey)
+        {
+            _key = bindingRuleKey;
+            return this;
+        }
+
         public void To(Expression<Func<TContext, T>> targetExpression)
         {
             var targetBody = targetExpression.GetBodyWithReplacedParameter(_contextParameter);
-            var key = targetExpression.GetTargetKey();
+            var key = _key ?? targetExpression.GetTargetKey();
 
             var targetParent = ((MemberExpression)targetExpression.Body).Expression;
             var targetParameter = targetExpression.Parameters[0];
@@ -119,7 +127,7 @@ namespace PropertyBinder
                 var invokeExpression = Expression.IfThen(conditionExpression, innerExpression);
                 var invoke = Expression.Lambda<Action<TContext, Action<TContext, T>>>(invokeExpression, _contextParameter, actionParameter).Compile();
 
-                _binder.AddRule(ctx => invoke(ctx, action), null, _runOnAttach, false, new[] { invokeExpression });
+                _binder.AddRule(ctx => invoke(ctx, action), _key, _runOnAttach, false, new[] { invokeExpression });
             }
         }
 

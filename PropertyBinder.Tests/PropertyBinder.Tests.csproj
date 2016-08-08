@@ -43,6 +43,10 @@
       <HintPath>..\packages\PropertyChanged.Fody.1.50.3\Lib\portable-net4+sl4+wp8+win8+wpa81+MonoAndroid16+MonoTouch40\PropertyChanged.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="PublicApiGenerator, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\PublicApiGenerator.4.0.1\lib\net40\PublicApiGenerator.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Shouldly, Version=2.6.0.0, Culture=neutral, PublicKeyToken=6042cbcb05cbc941, processorArchitecture=MSIL">
       <HintPath>..\packages\Shouldly.2.6.0\lib\net40\Shouldly.dll</HintPath>
       <Private>True</Private>
@@ -64,6 +68,7 @@
     <Compile Include="NullPropagationFixture.cs" />
     <Compile Include="OverridesFixture.cs" />
     <Compile Include="PropertyBindingsFixture.cs" />
+    <Compile Include="PublicApiFixture.cs" />
     <Compile Include="SimpleBindingsFixture.cs" />
     <Compile Include="TestExtensions.cs" />
     <Compile Include="UniversalStub.cs" />

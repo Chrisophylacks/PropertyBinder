@@ -204,5 +204,34 @@ namespace PropertyBinder.Tests
                 stub.String = "a";
             }
         }
+
+        [Test]
+        public void ShouldNotOverrideConditionalBindingsByAnotherConditionalIfDoNotOverrideSpecified()
+        {
+            _binder.BindIf(x => x.Flag, x => x.Int.ToString())
+                .Else(x => x.Int.ToString() + "1")
+                .To(x => x.String);
+
+            var binder = _binder.Clone<UniversalStubEx>();
+            binder.BindIf(x => true, x => x.String2).DoNotOverride().To(x => x.String);
+            var stub = new UniversalStubEx();
+
+            using (binder.Attach(stub))
+            {
+                stub.String = null;
+
+                using (stub.VerifyChangedOnce("String"))
+                {
+                    stub.Int = 1;
+                }
+                stub.String = "11";
+
+                using (stub.VerifyChangedOnce("String"))
+                {
+                    stub.String2 = "a";
+                }
+                stub.String = "a";
+            }
+        }
     }
 }
