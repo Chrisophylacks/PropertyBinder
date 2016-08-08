@@ -1,6 +1,6 @@
 using System;
+using System.Diagnostics;
 using System.IO;
-using System.Reflection;
 using NUnit.Framework;
 
 namespace PropertyBinder.Tests
@@ -11,17 +11,17 @@ namespace PropertyBinder.Tests
         [Test]
         public void ShouldPreservePublicApi()
         {
-            const string fileName = @"..\..\PublicApi.txt";
-            const string proposedFileName = @"..\..\PublicApi.txt.proposed";
+            string fileName = Path.Combine(Environment.CurrentDirectory, @"..\..\PublicApi.txt");
+            string proposedFileName = Path.Combine(Environment.CurrentDirectory, @"PublicApi.txt.proposed");
 
-            var api = PublicApiGenerator.PublicApiGenerator.GetPublicApi(typeof (PropertyBinder<>).Assembly);
-            //var api = PublicApiGenerator.PublicApiGenerator.GetPublicApi(Assembly.LoadFrom(@"w:\Projects\github\PropertyBinder\output\PropertyBinder.dll"));
+            var api = PublicApiGenerator.PublicApiGenerator.GetPublicApi(typeof (Binder<>).Assembly);
             if (File.Exists(fileName))
             {
                 var currentApi = File.ReadAllText(fileName);
                 if (!string.Equals(api, currentApi))
                 {
                     File.WriteAllText(proposedFileName, api);
+                    Process.Start(new ProcessStartInfo("winmergeu", string.Format("\"{0}\" \"{1}\"", proposedFileName, fileName)));
                     throw new Exception("API mismatch");
                 }
             }

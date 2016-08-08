@@ -27,7 +27,7 @@ namespace PropertyBinder
     internal sealed class ConditionalRuleBuilder<T, TContext> : IConditionalRuleBuilderPhase1<T, TContext>
         where TContext : class
     {
-        private readonly PropertyBinder<TContext> _binder;
+        private readonly Binder<TContext> _binder;
         private readonly List<Tuple<Expression, Expression>> _clauses = new List<Tuple<Expression, Expression>>();
         private Expression _defaultExpression;
         private readonly ParameterExpression _contextParameter;
@@ -35,7 +35,7 @@ namespace PropertyBinder
         private bool _canOverride = true;
         private string _key;
 
-        public ConditionalRuleBuilder(PropertyBinder<TContext> binder)
+        public ConditionalRuleBuilder(Binder<TContext> binder)
         {
             _binder = binder;
             _contextParameter = Expression.Parameter(typeof (TContext));

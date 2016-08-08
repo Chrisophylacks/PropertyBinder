@@ -5,10 +5,33 @@
 namespace PropertyBinder
 {
     
+    public sealed class Binder<TContext>
+        where TContext :  class
+    {
+        public Binder() { }
+        public System.IDisposable Attach(TContext context) { }
+        public PropertyBinder.Binder<TNewContext> Clone<TNewContext>()
+            where TNewContext :  class, TContext { }
+        public PropertyBinder.Binder<TContext> Clone() { }
+    }
+    public class static BinderExtensions
+    {
+        public static PropertyBinder.PropertyRuleBuilder<T, TContext> Bind<T, TContext>(this PropertyBinder.Binder<TContext> binder, System.Linq.Expressions.Expression<System.Func<TContext, T>> sourceExpression)
+        
+            where TContext :  class { }
+        public static PropertyBinder.CommandRuleBinder<TContext> BindCommand<TContext>(this PropertyBinder.Binder<TContext> binder, System.Action<TContext> executeAction, System.Linq.Expressions.Expression<System.Func<TContext, bool>> canExecuteExpression)
+            where TContext :  class { }
+        public static PropertyBinder.IConditionalRuleBuilderPhase1<T, TContext> BindIf<T, TContext>(this PropertyBinder.Binder<TContext> binder, System.Linq.Expressions.Expression<System.Func<TContext, bool>> conditionalExpression, System.Linq.Expressions.Expression<System.Func<TContext, T>> targetExpression)
+        
+            where TContext :  class { }
+        public static void Unbind<T, TContext>(this PropertyBinder.Binder<TContext> binder, System.Linq.Expressions.Expression<System.Func<TContext, T>> targetExpression)
+        
+            where TContext :  class { }
+    }
     public sealed class CommandRuleBinder<TContext>
         where TContext :  class
     {
-        public CommandRuleBinder(PropertyBinder.PropertyBinder<TContext> binder, System.Action<TContext> executeAction, System.Linq.Expressions.Expression<System.Func<TContext, bool>> canExecuteExpression) { }
+        public PropertyBinder.CommandRuleBinder<TContext> OverrideKey(string bindingRuleKey) { }
         public void To(System.Linq.Expressions.Expression<System.Func<TContext, System.Windows.Input.ICommand>> destinationExpression) { }
     }
     public interface IConditionalRuleBuilderPhase1<T, TContext> : PropertyBinder.IConditionalRuleBuilderPhase2<T, TContext>
@@ -24,9 +47,11 @@ namespace PropertyBinder
     {
         PropertyBinder.IConditionalRuleBuilderPhase2<T, TContext> DoNotOverride();
         PropertyBinder.IConditionalRuleBuilderPhase2<T, TContext> DoNotRunOnAttach();
+        PropertyBinder.IConditionalRuleBuilderPhase2<T, TContext> OverrideKey(string bindingRuleKey);
         void To(System.Linq.Expressions.Expression<System.Func<TContext, T>> targetExpression);
         void To(System.Action<TContext, T> action);
     }
+    [System.ObsoleteAttribute("Preserved for compatibility. Please use Binder class instead.")]
     public sealed class PropertyBinder<TContext>
         where TContext :  class
     {
@@ -38,11 +63,14 @@ namespace PropertyBinder
     }
     public class static PropertyBinderExtensions
     {
+        [System.ObsoleteAttribute()]
         public static PropertyBinder.PropertyRuleBuilder<T, TContext> Bind<T, TContext>(this PropertyBinder.PropertyBinder<TContext> binder, System.Linq.Expressions.Expression<System.Func<TContext, T>> sourceExpression)
         
             where TContext :  class { }
+        [System.ObsoleteAttribute()]
         public static PropertyBinder.CommandRuleBinder<TContext> BindCommand<TContext>(this PropertyBinder.PropertyBinder<TContext> binder, System.Action<TContext> executeAction, System.Linq.Expressions.Expression<System.Func<TContext, bool>> canExecuteExpression)
             where TContext :  class { }
+        [System.ObsoleteAttribute()]
         public static PropertyBinder.IConditionalRuleBuilderPhase1<T, TContext> BindIf<T, TContext>(this PropertyBinder.PropertyBinder<TContext> binder, System.Linq.Expressions.Expression<System.Func<TContext, bool>> conditionalExpression, System.Linq.Expressions.Expression<System.Func<TContext, T>> targetExpression)
         
             where TContext :  class { }
@@ -52,6 +80,7 @@ namespace PropertyBinder
         public static PropertyBinder.PropertyRuleBuilder<System.Nullable<T>, TContext> PropagateNullValues<T, TContext>(this PropertyBinder.PropertyRuleBuilder<System.Nullable<T>, TContext> ruleBuilder)
             where T :  struct
             where TContext :  class { }
+        [System.ObsoleteAttribute()]
         public static void Unbind<T, TContext>(this PropertyBinder.PropertyBinder<TContext> binder, System.Linq.Expressions.Expression<System.Func<TContext, T>> targetExpression)
         
             where TContext :  class { }
@@ -63,6 +92,7 @@ namespace PropertyBinder
         public PropertyBinder.PropertyRuleBuilder<T, TContext> Debug(System.Action<TContext> debugAction) { }
         public PropertyBinder.PropertyRuleBuilder<T, TContext> DoNotOverride() { }
         public PropertyBinder.PropertyRuleBuilder<T, TContext> DoNotRunOnAttach() { }
+        public PropertyBinder.PropertyRuleBuilder<T, TContext> OverrideKey(string bindingRuleKey) { }
         public void To(System.Linq.Expressions.Expression<System.Func<TContext, T>> targetExpression) { }
         public void To(System.Action<TContext, T> action) { }
         public void To(System.Action<TContext> action) { }

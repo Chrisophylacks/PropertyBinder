@@ -39,6 +39,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Binder.cs" />
+    <Compile Include="BinderExtensions.cs" />
     <Compile Include="CommandRuleBinder.cs" />
     <Compile Include="ConditionalRuleBuilder.cs" />
     <Compile Include="Engine\CollectionBindingNode.cs" />

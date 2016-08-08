@@ -9,12 +9,12 @@ namespace PropertyBinder
     public sealed class CommandRuleBinder<TContext>
         where TContext : class
     {
-        private readonly PropertyBinder<TContext> _binder;
+        private readonly Binder<TContext> _binder;
         private readonly Action<TContext> _executeAction;
         private readonly Expression<Func<TContext, bool>> _canExecuteExpression;
         private string _key;
 
-        public CommandRuleBinder(PropertyBinder<TContext> binder, Action<TContext> executeAction, Expression<Func<TContext, bool>> canExecuteExpression)
+        internal CommandRuleBinder(Binder<TContext> binder, Action<TContext> executeAction, Expression<Func<TContext, bool>> canExecuteExpression)
         {
             _binder = binder;
             _executeAction = executeAction;

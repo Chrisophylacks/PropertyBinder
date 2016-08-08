@@ -9,7 +9,7 @@ namespace PropertyBinder
     public sealed class PropertyRuleBuilder<T, TContext>
         where TContext : class
     {
-        private readonly PropertyBinder<TContext> _binder;
+        private readonly Binder<TContext> _binder;
         private readonly Expression<Func<TContext, T>> _sourceExpression;
         private readonly List<Expression> _dependencies = new List<Expression>();
         private bool _runOnAttach = true;
@@ -18,7 +18,7 @@ namespace PropertyBinder
         private Action<TContext> _debugAction;
         private string _key;
 
-        internal PropertyRuleBuilder(PropertyBinder<TContext> binder, Expression<Func<TContext, T>> sourceExpression)
+        internal PropertyRuleBuilder(Binder<TContext> binder, Expression<Func<TContext, T>> sourceExpression)
         {
             _binder = binder;
             _sourceExpression = sourceExpression;
