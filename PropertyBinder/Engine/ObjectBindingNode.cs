@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
-using System.Reflection;
 using PropertyBinder.Helpers;
 
 namespace PropertyBinder.Engine
@@ -51,32 +49,7 @@ namespace PropertyBinder.Engine
             }
         }
 
-        public IBindingNode<TContext> GetSubNode(MemberInfo member)
-        {
-            var property = member as PropertyInfo;
-            string memberName;
-            if (property != null)
-            {
-                memberName = property.Name;
-                if (!typeof (TNode).IsValueType)
-                {
-                    return GetOrCreateNode(memberName, () => property.GetGetMethod(true).CreateDelegate(typeof (Func<,>).MakeGenericType(typeof (TNode), property.PropertyType)));
-                }
-            }
-            else
-            {
-                var field = (FieldInfo)member;
-                memberName = field.Name;
-            }
-
-            return GetOrCreateNode(memberName, () =>
-            {
-                var parameter = Expression.Parameter(typeof (TNode));
-                return Expression.Lambda(Expression.MakeMemberAccess(parameter, member), parameter).Compile();
-            });
-        }
-
-        private IBindingNode<TContext> GetOrCreateNode(string key, Func<Delegate> createSelector)
+        public IBindingNode<TContext> GetSubNode(BindableMember member)
         {
             if (_subNodes == null)
             {
@@ -84,11 +57,11 @@ namespace PropertyBinder.Engine
             }
 
             IBindingNode<TContext, TNode> node;
-            if (!_subNodes.TryGetValue(key, out node))
+            if (!_subNodes.TryGetValue(member.Name, out node))
             {
-                var selector = createSelector();
-                node = (IBindingNode<TContext, TNode>) Activator.CreateInstance(typeof (BindingNode<,,>).MakeGenericType(typeof (TContext), typeof (TNode), selector.Method.ReturnType), selector);
-                _subNodes.Add(key, node);
+                var selector = member.CreateSelector(typeof(TNode));
+                node = (IBindingNode<TContext, TNode>)Activator.CreateInstance(typeof(BindingNode<,,>).MakeGenericType(typeof(TContext), typeof(TNode), selector.Method.ReturnType), selector);
+                _subNodes.Add(member.Name, node);
             }
 
             return node;
@@ -99,12 +72,12 @@ namespace PropertyBinder.Engine
             return _collectionNode ?? (_collectionNode = (ICollectionBindingNode<TContext, TNode>) Activator.CreateInstance(typeof (CollectionBindingNode<,,>).MakeGenericType(typeof (TContext), typeof (TNode), itemType)));
         }
 
-        public void AddAction(PropertyInfo property, Action<TContext> action)
+        public void AddAction(string memberName, Action<TContext> action)
         {
             UniqueActionCollection<TContext> currentAction;
-            if (!_bindingActions.TryGetValue(property.Name, out currentAction))
+            if (!_bindingActions.TryGetValue(memberName, out currentAction))
             {
-                _bindingActions[property.Name] = currentAction = new UniqueActionCollection<TContext>();
+                _bindingActions[memberName] = currentAction = new UniqueActionCollection<TContext>();
             }
             currentAction.Add(action);
         }

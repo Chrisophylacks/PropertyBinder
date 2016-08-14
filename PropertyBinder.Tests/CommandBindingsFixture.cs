@@ -6,8 +6,6 @@ namespace PropertyBinder.Tests
     [TestFixture]
     internal class CommandBindingsFixture : BindingsFixture
     {
-        #region Commands
-
         [Test]
         public void ShouldBindCommand()
         {
@@ -95,6 +93,25 @@ namespace PropertyBinder.Tests
             }
         }
 
-        #endregion
+        [Test]
+        public void ShouldAllowCustomCommandBindingDependency()
+        {
+            int canExecuteCalls = 0;
+            _binder.BindCommand(x => { }, x=> ExternalCondition(x)).WithDependency(x => x.Flag).To(x => x.Command);
+
+            using (_binder.Attach(_stub))
+            {
+                _stub.Command.CanExecuteChanged += (s, e) => { ++canExecuteCalls; };
+                _stub.Command.CanExecute(null).ShouldBe(false);
+                _stub.Flag = true;
+                canExecuteCalls.ShouldBe(1);
+                _stub.Command.CanExecute(null).ShouldBe(true);
+            }
+        }
+
+        private static bool ExternalCondition(UniversalStub stub)
+        {
+            return stub.Flag;
+        }
     }
 }

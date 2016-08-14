@@ -44,6 +44,7 @@
     <Compile Include="CommandRuleBinder.cs" />
     <Compile Include="ConditionalRuleBuilder.cs" />
     <Compile Include="Decompiler\Operation.cs" />
+    <Compile Include="Engine\BindableMember.cs" />
     <Compile Include="Engine\CollectionBindingNode.cs" />
     <Compile Include="Engine\CollectionWatcher.cs" />
     <Compile Include="Engine\ICollectionBindingNode.cs" />

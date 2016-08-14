@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Reflection;
 
 namespace PropertyBinder.Engine
 {
@@ -7,11 +6,11 @@ namespace PropertyBinder.Engine
     {
         bool HasBindingActions { get; }
 
-        IBindingNode<TContext> GetSubNode(MemberInfo member);
+        IBindingNode<TContext> GetSubNode(BindableMember member);
 
         ICollectionBindingNode<TContext> GetCollectionNode(Type itemType);
 
-        void AddAction(PropertyInfo property, Action<TContext> action);
+        void AddAction(string propertyName, Action<TContext> action);
 
         void RemoveActionCascade(Action<TContext> action);
     }

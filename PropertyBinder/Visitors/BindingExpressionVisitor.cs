@@ -26,7 +26,7 @@ namespace PropertyBinder.Visitors
             if (path != null)
             {
                 var node = _rootNode;
-                MemberInfo parentMember = null;
+                BindableMember parentMember = null;
 
                 foreach (var entry in path)
                 {
@@ -35,10 +35,9 @@ namespace PropertyBinder.Visitors
                         node = node.GetSubNode(parentMember);
                     }
 
-                    var property = entry as PropertyInfo;
-                    if (property != null)
+                    if (entry.CanSubscribe)
                     {
-                        node.AddAction(property, _bindingAction);
+                        node.AddAction(entry.Name, _bindingAction);
                     }
 
                     parentMember = entry;

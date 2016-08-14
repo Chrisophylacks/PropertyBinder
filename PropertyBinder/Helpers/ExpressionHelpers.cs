@@ -3,15 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using PropertyBinder.Engine;
 using PropertyBinder.Visitors;
 
 namespace PropertyBinder.Helpers
 {
     internal static class ExpressionHelpers
     {
-        public static List<MemberInfo> GetPathToParameter(this Expression node, Type parameterType)
+        public static List<BindableMember> GetPathToParameter(this Expression node, Type parameterType)
         {
-            var list = new List<MemberInfo>();
+            var list = new List<BindableMember>();
             var expr = node;
             while (true)
             {
@@ -26,14 +27,38 @@ namespace PropertyBinder.Helpers
                     return list;
                 }
 
-                var member = expr as MemberExpression;
-                if (member == null)
+                var memberExpr = expr as MemberExpression;
+                if (memberExpr != null)
                 {
-                    return null;
+                    var member = memberExpr.Member;
+
+                    if (member is PropertyInfo)
+                    {
+                        list.Add(new BindableMember((PropertyInfo) member));
+                    }
+                    else if (member is FieldInfo)
+                    {
+                        list.Add(new BindableMember((FieldInfo) member));
+                    }
+
+                    expr = memberExpr.Expression;
+                    continue;
                 }
 
-                list.Add(member.Member);
-                expr = member.Expression;
+                // attempt to resolve path from indexer
+                var callExpr = expr as MethodCallExpression;
+                if (callExpr != null && callExpr.Method.IsSpecialName && callExpr.Method.Name == "get_Item" && callExpr.Arguments.Count == 1)
+                {
+                    var indexArg = callExpr.Arguments[0];
+                    if (indexArg.Type == typeof (string) && indexArg.NodeType == ExpressionType.Constant)
+                    {
+                        list.Add(new BindableMember((string) ((ConstantExpression) indexArg).Value));
+                        expr = callExpr.Object;
+                        continue;
+                    }
+                }
+
+                return null;
             }
         }
 
