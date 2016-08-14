@@ -47,19 +47,32 @@ namespace PropertyBinder.Helpers
 
                 // attempt to resolve path from indexer
                 var callExpr = expr as MethodCallExpression;
-                if (callExpr != null && callExpr.Method.IsSpecialName && callExpr.Method.Name == "get_Item" && callExpr.Arguments.Count == 1)
+                string index;
+                if (callExpr != null && callExpr.IsBindableIndexerInvocation(out index))
                 {
-                    var indexArg = callExpr.Arguments[0];
-                    if (indexArg.Type == typeof (string) && indexArg.NodeType == ExpressionType.Constant)
-                    {
-                        list.Add(new BindableMember((string) ((ConstantExpression) indexArg).Value));
-                        expr = callExpr.Object;
-                        continue;
-                    }
+                    list.Add(new BindableMember(index));
+                    expr = callExpr.Object;
+                    continue;
                 }
 
                 return null;
             }
+        }
+
+        public static bool IsBindableIndexerInvocation(this MethodCallExpression callExpr, out string index)
+        {
+            if (callExpr.Method.IsSpecialName && callExpr.Method.Name == "get_Item" && callExpr.Arguments.Count == 1)
+            {
+                var indexArg = callExpr.Arguments[0];
+                if (indexArg.Type == typeof (string) && indexArg.NodeType == ExpressionType.Constant)
+                {
+                    index = (string) ((ConstantExpression) indexArg).Value;
+                    return true;
+                }
+            }
+
+            index = null;
+            return false;
         }
 
         public static string GetTargetKey<TContext, T>(this Expression<Func<TContext, T>> targetExpression)

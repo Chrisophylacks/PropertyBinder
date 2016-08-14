@@ -34,6 +34,7 @@ namespace PropertyBinder
     {
         public PropertyBinder.CommandRuleBinder<TContext> OverrideKey(string bindingRuleKey) { }
         public void To(System.Linq.Expressions.Expression<System.Func<TContext, System.Windows.Input.ICommand>> destinationExpression) { }
+        public PropertyBinder.CommandRuleBinder<TContext> WithDependency<TDependency>(System.Linq.Expressions.Expression<System.Func<TContext, TDependency>> dependencyExpression) { }
     }
     public interface IConditionalRuleBuilderPhase1<T, TContext> : PropertyBinder.IConditionalRuleBuilderPhase2<T, TContext>
     

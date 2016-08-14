@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq.Expressions;
-using System.Reflection;
 using PropertyBinder.Engine;
 using PropertyBinder.Helpers;
 
@@ -22,27 +21,9 @@ namespace PropertyBinder.Visitors
 
         protected override Expression VisitMember(MemberExpression expr)
         {
-            var path = expr.GetPathToParameter(_rootParameterType);
-            if (path != null)
+            // accessors
+            if (TryBindPath(expr))
             {
-                var node = _rootNode;
-                BindableMember parentMember = null;
-
-                foreach (var entry in path)
-                {
-                    if (parentMember != null)
-                    {
-                        node = node.GetSubNode(parentMember);
-                    }
-
-                    if (entry.CanSubscribe)
-                    {
-                        node.AddAction(entry.Name, _bindingAction);
-                    }
-
-                    parentMember = entry;
-                }
-
                 return expr;
             }
 
@@ -51,6 +32,13 @@ namespace PropertyBinder.Visitors
 
         protected override Expression VisitMethodCall(MethodCallExpression expr)
         {
+            // indexers
+            if (TryBindPath(expr))
+            {
+                return expr;
+            }
+
+            // collection aggregates
             foreach (var arg in expr.Arguments)
             {
                 var collectionItemType = arg.Type.ResolveCollectionItemType();
@@ -98,6 +86,35 @@ namespace PropertyBinder.Visitors
             }
 
             return base.VisitMethodCall(expr);
+        }
+
+        private bool TryBindPath(Expression expr)
+        {
+            var path = expr.GetPathToParameter(_rootParameterType);
+            if (path != null)
+            {
+                var node = _rootNode;
+                BindableMember parentMember = null;
+
+                foreach (var entry in path)
+                {
+                    if (parentMember != null)
+                    {
+                        node = node.GetSubNode(parentMember);
+                    }
+
+                    if (entry.CanSubscribe)
+                    {
+                        node.AddAction(entry.Name, _bindingAction);
+                    }
+
+                    parentMember = entry;
+                }
+
+                return true;
+            }
+
+            return false;
         }
     }
 }
