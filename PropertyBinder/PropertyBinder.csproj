@@ -43,13 +43,16 @@
     <Compile Include="BinderExtensions.cs" />
     <Compile Include="CommandRuleBinder.cs" />
     <Compile Include="ConditionalRuleBuilder.cs" />
+    <Compile Include="Decompiler\Operation.cs" />
     <Compile Include="Engine\CollectionBindingNode.cs" />
     <Compile Include="Engine\CollectionWatcher.cs" />
     <Compile Include="Engine\ICollectionBindingNode.cs" />
     <Compile Include="Engine\IBindingNode.cs" />
     <Compile Include="Engine\ObjectBindingNode.cs" />
     <Compile Include="Engine\ObjectWatcher.cs" />
+    <Compile Include="Decompiler\MethodAnalyzer.cs" />
     <Compile Include="Helpers\ExpressionHelpers.cs" />
+    <Compile Include="Decompiler\IlReader.cs" />
     <Compile Include="Helpers\ReferenceEqualityComparer.cs" />
     <Compile Include="Helpers\TypeExtensions.cs" />
     <Compile Include="Helpers\UniqueActionCollection.cs" />

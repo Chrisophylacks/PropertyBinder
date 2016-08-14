@@ -38,7 +38,7 @@ namespace PropertyBinder
             where T : class
             where TContext : class
         {
-            ruleBuilder.PropagateNullValues();
+            ruleBuilder.SetPropagateNullValues(true);
             return ruleBuilder;
         }
 
@@ -46,7 +46,7 @@ namespace PropertyBinder
             where T : struct
             where TContext : class
         {
-            ruleBuilder.PropagateNullValues();
+            ruleBuilder.SetPropagateNullValues(true);
             return ruleBuilder;
         }
     }

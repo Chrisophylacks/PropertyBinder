@@ -61,5 +61,17 @@ namespace PropertyBinder.Tests
                 handler(this, new PropertyChangedEventArgs(propertyName));
             }
         }
+
+        public event EventHandler TestEvent;
+
+        public void RaiseTestEvent()
+        {
+            TestEvent?.Invoke(this, EventArgs.Empty);
+        }
+
+        public void HandleTestEvent(object sender, EventArgs args)
+        {
+            
+        }
     }
 }

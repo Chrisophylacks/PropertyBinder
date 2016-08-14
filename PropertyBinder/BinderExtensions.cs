@@ -1,5 +1,6 @@
 using System;
 using System.Linq.Expressions;
+using PropertyBinder.Decompiler;
 using PropertyBinder.Helpers;
 
 namespace PropertyBinder
@@ -28,6 +29,16 @@ namespace PropertyBinder
             where TContext : class
         {
             return new ConditionalRuleBuilder<T, TContext>(binder).ElseIf(conditionalExpression, targetExpression);
+        }
+
+        internal static void BindEvent<TContext>(this Binder<TContext> binder, Action<TContext> eventSubscription)
+            where TContext : class
+        {
+            Expression left;
+            Expression right;
+            Action<TContext> unsubscribe;
+            MethodAnalyzer.SplitEventExpression(eventSubscription, out left, out right, out unsubscribe);
+            binder.AddRule(null, null, true, false, new[] { left, right });
         }
     }
 }

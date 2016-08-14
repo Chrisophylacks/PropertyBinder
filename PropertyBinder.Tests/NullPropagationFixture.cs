@@ -6,7 +6,7 @@ using Shouldly;
 namespace PropertyBinder.Tests
 {
     [TestFixture]
-    internal class NullPropagationFixture : PropertyBindingsFixture
+    internal class NullPropagationFixture : BindingsFixture
     {
         [Test]
         public void ShouldPropagateNulls()

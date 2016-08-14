@@ -127,7 +127,7 @@ namespace PropertyBinder
                 var invokeExpression = Expression.IfThen(conditionExpression, innerExpression);
                 var invoke = Expression.Lambda<Action<TContext, Action<TContext, T>>>(invokeExpression, _contextParameter, actionParameter).Compile();
 
-                _binder.AddRule(ctx => invoke(ctx, action), _key, _runOnAttach, false, new[] { invokeExpression });
+                _binder.AddRule(ctx => invoke(ctx, action), _key, _runOnAttach, i == 0 && _canOverride, new[] { invokeExpression });
             }
         }
 

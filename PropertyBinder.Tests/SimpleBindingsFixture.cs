@@ -6,7 +6,7 @@ using Shouldly;
 namespace PropertyBinder.Tests
 {
     [TestFixture]
-    internal class SimpleBindingsFixture : PropertyBindingsFixture
+    internal class SimpleBindingsFixture : BindingsFixture
     {
         [Test]
         public void ShouldAssignBoundPropertyWhenAttached()

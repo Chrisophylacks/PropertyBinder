@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Windows.Input;
@@ -12,6 +13,7 @@ namespace PropertyBinder
         private readonly Binder<TContext> _binder;
         private readonly Action<TContext> _executeAction;
         private readonly Expression<Func<TContext, bool>> _canExecuteExpression;
+        private readonly List<Expression> _dependencies = new List<Expression>();
         private string _key;
 
         internal CommandRuleBinder(Binder<TContext> binder, Action<TContext> executeAction, Expression<Func<TContext, bool>> canExecuteExpression)
@@ -24,6 +26,12 @@ namespace PropertyBinder
         public CommandRuleBinder<TContext> OverrideKey(string bindingRuleKey)
         {
             _key = bindingRuleKey;
+            return this;
+        }
+
+        public CommandRuleBinder<TContext> WithDependency<TDependency>(Expression<Func<TContext, TDependency>> dependencyExpression)
+        {
+            _dependencies.Add(dependencyExpression.Body);
             return this;
         }
 
@@ -42,9 +50,10 @@ namespace PropertyBinder
             var getCommand = destinationExpression.Compile();
             var canExecute = _canExecuteExpression.Compile();
             var key = _key ?? destinationExpression.GetTargetKey();
+            _dependencies.Add(_canExecuteExpression);
 
             _binder.AddRule(ctx => assignCommand(ctx, new ActionCommand(ctx, _executeAction, canExecute)), key, true, true, Enumerable.Empty<LambdaExpression>());
-            _binder.AddRule(ctx => UpdateCanExecuteOnCommand(getCommand(ctx)), key, true, false, new[] { _canExecuteExpression });
+            _binder.AddRule(ctx => UpdateCanExecuteOnCommand(getCommand(ctx)), key, true, false, _dependencies);
         }
 
         private sealed class ActionCommand : ICommand

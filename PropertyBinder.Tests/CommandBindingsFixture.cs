@@ -4,7 +4,7 @@ using Shouldly;
 namespace PropertyBinder.Tests
 {
     [TestFixture]
-    internal class CommandBindingsFixture : PropertyBindingsFixture
+    internal class CommandBindingsFixture : BindingsFixture
     {
         #region Commands
 

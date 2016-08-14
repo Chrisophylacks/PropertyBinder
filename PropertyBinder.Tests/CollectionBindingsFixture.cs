@@ -6,7 +6,7 @@ using Shouldly;
 namespace PropertyBinder.Tests
 {
     [TestFixture]
-    internal class CollectionBindingsFixture : PropertyBindingsFixture
+    internal class CollectionBindingsFixture : BindingsFixture
     {
         [Test]
         public void ShouldBindAggregatedCollectionOfValueTypes()

@@ -65,9 +65,10 @@
     <Compile Include="CollectionBindingsFixture.cs" />
     <Compile Include="CommandBindingsFixture.cs" />
     <Compile Include="ConditionalBindingsFixture.cs" />
+    <Compile Include="EventBindingFixture.cs" />
     <Compile Include="NullPropagationFixture.cs" />
     <Compile Include="OverridesFixture.cs" />
-    <Compile Include="PropertyBindingsFixture.cs" />
+    <Compile Include="BindingsFixture.cs" />
     <Compile Include="PublicApiFixture.cs" />
     <Compile Include="SimpleBindingsFixture.cs" />
     <Compile Include="TestExtensions.cs" />

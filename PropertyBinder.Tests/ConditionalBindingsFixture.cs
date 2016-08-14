@@ -4,7 +4,7 @@ using Shouldly;
 namespace PropertyBinder.Tests
 {
     [TestFixture]
-    internal class ConditionalBindingsFixture : PropertyBindingsFixture
+    internal class ConditionalBindingsFixture : BindingsFixture
     {
         [Test]
         public void ShouldBindConditionally()

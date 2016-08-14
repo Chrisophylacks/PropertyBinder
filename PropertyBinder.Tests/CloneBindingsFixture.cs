@@ -4,7 +4,7 @@ using Shouldly;
 namespace PropertyBinder.Tests
 {
     [TestFixture]
-    internal class CloneBindingsFixture : PropertyBindingsFixture
+    internal class CloneBindingsFixture : BindingsFixture
     {
         [Test]
         public void ClonedBindersShouldInheritBindings()

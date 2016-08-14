@@ -4,7 +4,7 @@ using Shouldly;
 namespace PropertyBinder.Tests
 {
     [TestFixture]
-    internal class OverridesFixture : PropertyBindingsFixture
+    internal class OverridesFixture : BindingsFixture
     {
         [Test]
         public void ShouldOverrideBindingRules()
@@ -35,6 +35,30 @@ namespace PropertyBinder.Tests
         {
             _binder.Bind(x => x.Int.ToString()).OverrideKey("mykey").To(x => x.String);
             _binder.Bind(x => x.String2).OverrideKey("mykey").To(x => x.String);
+
+            _stub = new UniversalStub();
+            using (_binder.Attach(_stub))
+            {
+                _stub.String.ShouldBe(null);
+                using (_stub.VerifyNotChanged("String"))
+                {
+                    _stub.Int = 1;
+                }
+                _stub.String2.ShouldBe(null);
+
+                using (_stub.VerifyChangedOnce("String"))
+                {
+                    _stub.String2 = "a";
+                }
+                _stub.String2.ShouldBe("a");
+            }
+        }
+
+        [Test]
+        public void ShouldOverrideConditionalBindingRulesByCustomKey()
+        {
+            _binder.BindIf(x => true, x => x.Int.ToString()).OverrideKey("mykey").To((x, v) => x.String = v);
+            _binder.BindIf(x => true, x => x.String2).OverrideKey("mykey").To((x, v) => x.String = v);
 
             _stub = new UniversalStub();
             using (_binder.Attach(_stub))

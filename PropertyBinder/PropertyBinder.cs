@@ -10,7 +10,7 @@ namespace PropertyBinder
 
         private PropertyBinder(Binder<TContext> binder)
         {
-            Binder = new Binder<TContext>();
+            Binder = binder;
         }
 
         public PropertyBinder()

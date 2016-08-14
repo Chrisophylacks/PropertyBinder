@@ -73,7 +73,7 @@ namespace PropertyBinder
 
         public void To(Action<TContext> action)
         {
-            AddRule(action, null);
+            AddRule(action, _key);
         }
 
         public PropertyRuleBuilder<T, TContext> OverrideKey(string bindingRuleKey)
@@ -106,9 +106,9 @@ namespace PropertyBinder
             return this;
         }
 
-        internal void PropagateNullValues()
+        internal void SetPropagateNullValues(bool value)
         {
-            _propagateNullValues = true;
+            _propagateNullValues = value;
         }
 
         private void AddRule(Action<TContext> action, string key)
