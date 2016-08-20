@@ -1,15 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
-using PropertyBinder.Helpers;
 
 namespace PropertyBinder.Engine
 {
-    internal sealed class ObjectWatcher<TContext, TParent, TNode> : IObjectWatcher<TParent>
+    internal sealed class ObjectWatcher<TParent, TNode> : IObjectWatcher<TParent>
     {
-        private static readonly IDictionary<string, IObjectWatcher<TNode>> EmptyDictionary = new ReadOnlyDictionary<string, IObjectWatcher<TNode>>(new Dictionary<string, IObjectWatcher<TNode>>());
-
         // ReSharper disable once StaticMemberInGenericType
         private static readonly bool IsValueType;
 
@@ -19,17 +15,15 @@ namespace PropertyBinder.Engine
         }
 
         private readonly IDictionary<string, IObjectWatcher<TNode>> _subWatchers;
-        private readonly IDictionary<string, UniqueActionCollection<TContext>> _bindingActions;
-        private readonly TContext _bindingContext;
+        private readonly IDictionary<string, Binding[]> _bindings;
         private readonly Func<TParent, TNode> _targetSelector;
         private TNode _target;
 
-        public ObjectWatcher(TContext bindingContext, Func<TParent, TNode> targetSelector, IDictionary<string, IObjectWatcher<TNode>> subWatchers, IDictionary<string, UniqueActionCollection<TContext>> bindingActions)
+        public ObjectWatcher(Func<TParent, TNode> targetSelector, IDictionary<string, IObjectWatcher<TNode>> subWatchers, IDictionary<string, Binding[]> bindings)
         {
-            _bindingContext = bindingContext;
             _targetSelector = targetSelector;
-            _subWatchers = subWatchers ?? EmptyDictionary;
-            _bindingActions = bindingActions;
+            _subWatchers = subWatchers;
+            _bindings = bindings;
         }
 
         public void Attach(TParent parent)
@@ -54,9 +48,12 @@ namespace PropertyBinder.Engine
                 }
             }
 
-            foreach (var node in _subWatchers.Values)
+            if (_subWatchers != null)
             {
-                node.Attach(_target);
+                foreach (var node in _subWatchers.Values)
+                {
+                    node.Attach(_target);
+                }
             }
         }
 
@@ -68,15 +65,15 @@ namespace PropertyBinder.Engine
         private void TargetPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             IObjectWatcher<TNode> node;
-            if (_subWatchers.TryGetValue(e.PropertyName, out node))
+            if (_subWatchers != null && _subWatchers.TryGetValue(e.PropertyName, out node))
             {
                 node.Attach(_target);
             }
 
-            UniqueActionCollection<TContext> action;
-            if (_bindingActions.TryGetValue(e.PropertyName, out action))
+            Binding[] bindings;
+            if (_bindings.TryGetValue(e.PropertyName, out bindings))
             {
-                action.Execute(_bindingContext);
+                BindingExecutor.Execute(bindings);
             }
         }
     }

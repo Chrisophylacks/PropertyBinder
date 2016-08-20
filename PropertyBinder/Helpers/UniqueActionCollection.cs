@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
@@ -27,6 +28,14 @@ namespace PropertyBinder.Helpers
             get { return _actions.Length == 0; }
         }
 
+        public IEnumerable<Action<T>> Actions
+        {
+            get
+            {
+                return _actions;
+            }
+        }
+
         public UniqueActionCollection<TDerived> Clone<TDerived>()
             where TDerived : T
         {
@@ -40,7 +49,8 @@ namespace PropertyBinder.Helpers
         {
             if (!_actions.Contains(action, ReferenceEqualityComparer<Action<T>>.Instance))
             {
-                _actions = _actions.Union(new[] {action}).ToArray();
+                Array.Resize(ref _actions, _actions.Length + 1);
+                _actions[_actions.Length - 1] = action;
             }
         }
 

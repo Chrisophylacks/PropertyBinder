@@ -10,13 +10,13 @@ namespace PropertyBinder.Visitors
     {
         private readonly IBindingNode<TContext> _rootNode;
         private readonly Type _rootParameterType;
-        private readonly Action<TContext> _bindingAction;
+        private readonly int _actionIndex;
 
-        public BindingExpressionVisitor(IBindingNode<TContext> rootNode, Type rootParameterType, Action<TContext> bindingAction)
+        public BindingExpressionVisitor(IBindingNode<TContext> rootNode, Type rootParameterType, int actionIndex)
         {
             _rootNode = rootNode;
             _rootParameterType = rootParameterType;
-            _bindingAction = bindingAction;
+            _actionIndex = actionIndex;
         }
 
         protected override Expression VisitMember(MemberExpression expr)
@@ -65,7 +65,7 @@ namespace PropertyBinder.Visitors
                     continue;
                 }
 
-                collectionNode.AddAction(_bindingAction);
+                collectionNode.AddAction(_actionIndex);
 
                 BindingExpressionVisitor<TContext> itemVisitor = null;
                 foreach (var arg2 in expr.Arguments)
@@ -77,7 +77,7 @@ namespace PropertyBinder.Visitors
                         {
                             if (itemVisitor == null)
                             {
-                                itemVisitor = new BindingExpressionVisitor<TContext>(collectionNode.GetItemNode(), collectionItemType, _bindingAction);
+                                itemVisitor = new BindingExpressionVisitor<TContext>(collectionNode.GetItemNode(), collectionItemType, _actionIndex);
                             }
                             itemVisitor.Visit(lambda.Body);
                         }
@@ -105,7 +105,7 @@ namespace PropertyBinder.Visitors
 
                     if (entry.CanSubscribe)
                     {
-                        node.AddAction(entry.Name, _bindingAction);
+                        node.AddAction(entry.Name, _actionIndex);
                     }
 
                     parentMember = entry;

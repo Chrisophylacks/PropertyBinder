@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace PropertyBinder.Engine
 {
@@ -10,9 +11,7 @@ namespace PropertyBinder.Engine
 
         ICollectionBindingNode<TContext> GetCollectionNode(Type itemType);
 
-        void AddAction(string propertyName, Action<TContext> action);
-
-        void RemoveActionCascade(Action<TContext> action);
+        void AddAction(string propertyName, int actionIndex);
     }
 
     internal interface IBindingNode<TContext, in TParent> : IBindingNode<TContext>
@@ -23,7 +22,7 @@ namespace PropertyBinder.Engine
         IBindingNode<TNewContext, TNewContext> CloneSubRootForDerivedType<TNewContext>()
             where TNewContext : class, TContext, TParent;
 
-        IObjectWatcher<TParent> CreateWatcher(TContext context);
+        IObjectWatcher<TParent> CreateWatcher(Func<IEnumerable<int>, Binding[]> bindingsFactory);
     }
 
     internal interface IBindingNodeRoot<TContext> : IBindingNode<TContext, TContext>

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using PropertyBinder.Helpers;
 
 namespace PropertyBinder.Engine
@@ -7,17 +8,17 @@ namespace PropertyBinder.Engine
     internal sealed class CollectionBindingNode<TContext, TCollection, TItem> : ICollectionBindingNode<TContext, TCollection>
         where TCollection : class, IEnumerable<TItem>
     {
-        private readonly UniqueActionCollection<TContext> _bindingAction;
+        private readonly List<int> _indexes;
         private IBindingNode<TContext, TItem> _itemNode;
 
-        private CollectionBindingNode(UniqueActionCollection<TContext> bindingAction, IBindingNode<TContext, TItem> itemNode)
+        private CollectionBindingNode(List<int> indexes, IBindingNode<TContext, TItem> itemNode)
         {
-            _bindingAction = bindingAction;
+            _indexes = indexes;
             _itemNode = itemNode;
         }
 
         public CollectionBindingNode()
-            : this(new UniqueActionCollection<TContext>(), null)
+            : this(new List<int>(), null)
         {
         }
 
@@ -26,14 +27,9 @@ namespace PropertyBinder.Engine
             get { return _itemNode != null && _itemNode.HasBindingActions; }
         }
 
-        public void AddAction(Action<TContext> action)
+        public void AddAction(int index)
         {
-            _bindingAction.Add(action);
-        }
-
-        public void RemoveActionCascade(Action<TContext> action)
-        {
-            _bindingAction.Remove(action);
+            _indexes.Add(index);
         }
 
         public IBindingNode<TContext> GetItemNode()
@@ -41,15 +37,15 @@ namespace PropertyBinder.Engine
             return _itemNode ?? (_itemNode = new BindingNode<TContext, TItem, TItem>(_ => _));
         }
 
-        public IObjectWatcher<TCollection> CreateWatcher(TContext context)
+        public IObjectWatcher<TCollection> CreateWatcher(Func<IEnumerable<int>, Binding[]> bindingsFactory)
         {
-            return new CollectionWatcher<TContext, TCollection, TItem>(context, _bindingAction, HasBindingActions ? _itemNode : null);
+            return new CollectionWatcher<TContext, TCollection, TItem>(bindingsFactory(_indexes), bindingsFactory, HasBindingActions ? _itemNode : null);
         }
 
         public ICollectionBindingNode<TNewContext, TCollection> CloneForDerivedType<TNewContext>()
             where TNewContext : class, TContext
         {
-            return new CollectionBindingNode<TNewContext, TCollection, TItem>(_bindingAction.Clone<TNewContext>(), _itemNode != null ? _itemNode.CloneForDerivedType<TNewContext>() : null);
+            return new CollectionBindingNode<TNewContext, TCollection, TItem>(new List<int>(_indexes), _itemNode != null ? _itemNode.CloneForDerivedType<TNewContext>() : null);
         }
     }
 }
