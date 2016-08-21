@@ -2,23 +2,23 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
-using PropertyBinder.Helpers;
 
 namespace PropertyBinder.Engine
 {
-    internal class CollectionWatcher<TContext, TCollection, TItem> : IObjectWatcher<TCollection>
-        where TCollection : class, IEnumerable<TItem>
+    internal class CollectionWatcher<TCollection, TItem> : IObjectWatcher<TCollection>
+        where TCollection : IEnumerable<TItem>
     {
-        private readonly IBindingNode<TContext, TItem> _itemNode;
+        private readonly Binding[] _ownBindings;
+        private readonly Func<IEnumerable<int>, Binding[]> _bindingsFactory;
+        private readonly IBindingNode<TItem> _itemNode;
         private readonly IDictionary<TItem, IObjectWatcher<TItem>> _attachedItems = new Dictionary<TItem, IObjectWatcher<TItem>>();
-        protected readonly TContext _bindingContext;
-        protected TCollection _target;
-        protected UniqueActionCollection<TContext> _action;
 
-        public CollectionWatcher(TContext bindingContext, UniqueActionCollection<TContext> action, IBindingNode<TContext, TItem> itemNode)
+        protected TCollection _target;
+
+        public CollectionWatcher(Binding[] ownBindings, Func<IEnumerable<int>, Binding[]> bindingsFactory, IBindingNode<TItem> itemNode)
         {
-            _bindingContext = bindingContext;
-            _action = action;
+            _ownBindings = ownBindings;
+            _bindingsFactory = bindingsFactory;
             _itemNode = itemNode;
         }
 
@@ -48,14 +48,14 @@ namespace PropertyBinder.Engine
 
         public void Dispose()
         {
-            Attach(null);
+            Attach(default(TCollection));
         }
 
         protected virtual void TargetCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
-            if (_action != null)
+            if (_ownBindings != null)
             {
-                _action.Execute(_bindingContext);
+                BindingExecutor.Execute(_ownBindings);
             }
 
             if (_itemNode != null)
@@ -122,7 +122,7 @@ namespace PropertyBinder.Engine
         {
             if (item != null && !_attachedItems.ContainsKey(item))
             {
-                var watcher = _itemNode.CreateWatcher(_bindingContext);
+                var watcher = _itemNode.CreateWatcher(_bindingsFactory);
                 watcher.Attach(item);
                 _attachedItems.Add(item, watcher);
             }

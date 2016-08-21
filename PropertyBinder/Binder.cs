@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using PropertyBinder.Engine;
-using PropertyBinder.Helpers;
 using PropertyBinder.Visitors;
 
 namespace PropertyBinder
@@ -11,26 +10,24 @@ namespace PropertyBinder
     public sealed class Binder<TContext>
         where TContext : class
     {
-        private readonly IDictionary<string, List<Action<TContext>>> _keyedActions;
-        private readonly IBindingNodeRoot<TContext> _rootNode;
-        private readonly UniqueActionCollection<TContext> _attachActions;
+        private readonly IBindingNode<TContext> _rootNode;
+        private readonly List<BindingAction> _actions;
 
-        internal Binder(IBindingNodeRoot<TContext> rootNode, IDictionary<string, List<Action<TContext>>> keyedActions, UniqueActionCollection<TContext> attachActions)
+        private Binder(IBindingNode<TContext> rootNode, List<BindingAction> actions)
         {
             _rootNode = rootNode;
-            _keyedActions = keyedActions;
-            _attachActions = attachActions;
+            _actions = actions;
         }
 
         public Binder()
-            : this(new BindingNodeRoot<TContext>(), new Dictionary<string, List<Action<TContext>>>(), new UniqueActionCollection<TContext>())
+            : this(new BindingNodeRoot<TContext>(), new List<BindingAction>())
         {
         }
 
         public Binder<TNewContext> Clone<TNewContext>()
             where TNewContext : class, TContext
         {
-            return new Binder<TNewContext>(_rootNode.CloneRootForDerivedType<TNewContext>(), _keyedActions.ToDictionary(x => x.Key, x => new List<Action<TNewContext>>(x.Value)), _attachActions.Clone<TNewContext>());
+            return new Binder<TNewContext>(_rootNode.CloneForDerivedParentType<TNewContext>(), _actions.Select(x => new Binder<TNewContext>.BindingAction(x.Action, x.Key, x.RunOnAttach)).ToList());
         }
 
         public Binder<TContext> Clone()
@@ -40,63 +37,68 @@ namespace PropertyBinder
 
         internal void AddRule(Action<TContext> bindingAction, string key, bool runOnAttach, bool canOverride, IEnumerable<Expression> triggerExpressions)
         {
-            if (!string.IsNullOrEmpty(key))
+            if (!string.IsNullOrEmpty(key) && canOverride)
             {
-                List<Action<TContext>> existingActions;
-                if (!_keyedActions.TryGetValue(key, out existingActions))
-                {
-                    _keyedActions.Add(key, existingActions = new List<Action<TContext>>());
-                }
-
-                if (canOverride)
-                {
-                    foreach (var action in existingActions)
-                    {
-                        _attachActions.Remove(action);
-                        _rootNode.RemoveActionCascade(action);
-                    }
-                }
-
-                existingActions.Add(bindingAction);
+                RemoveRule(key);
             }
 
-            if (runOnAttach)
-            {
-                _attachActions.Add(bindingAction);
-            }
+            _actions.Add(new BindingAction(bindingAction, key, runOnAttach));
 
             foreach (var expr in triggerExpressions)
             {
-                new BindingExpressionVisitor<TContext>(_rootNode, typeof(TContext), bindingAction).Visit(expr);
+                new BindingExpressionVisitor<TContext>(_rootNode, typeof(TContext), _actions.Count - 1).Visit(expr);
             }
         }
 
         internal void RemoveRule(string key)
         {
-            List<Action<TContext>> existingActions;
-            if (_keyedActions.TryGetValue(key, out existingActions))
+            for (int i = 0; i < _actions.Count; ++i)
             {
-                foreach (var action in existingActions)
+                if (_actions[i].Key == key)
                 {
-                    _attachActions.Remove(action);
-                    _rootNode.RemoveActionCascade(action);
+                    _actions[i] = default(BindingAction);
                 }
-
-                _keyedActions.Remove(key);
             }
         }
 
         public IDisposable Attach(TContext context)
         {
-            var watcher = _rootNode.CreateWatcher(context);
+            var dict = new Dictionary<int, Binding>();
+            for (int i = 0; i < _actions.Count; ++i)
+            {
+                var action = _actions[i].Action;
+                dict.Add(i, action != null ? new Binding(() => action(context)) : null);
+            }
+
+            var factory = new Func<IEnumerable<int>, Binding[]>(e => e.Select(x => dict[x]).Where(x => x != null).ToArray());
+            var watcher = _rootNode.CreateWatcher(factory);
             watcher.Attach(context);
 
-            if (_attachActions != null)
+            foreach (var action in _actions)
             {
-                _attachActions.Execute(context);
+                if (action.Action != null && action.RunOnAttach)
+                {
+                    action.Action(context);
+                }
             }
 
             return watcher;
+        }
+
+        private struct BindingAction
+        {
+            public BindingAction(Action<TContext> action, string key, bool runOnAttach)
+            {
+                Action = action;
+                Key = key;
+                RunOnAttach = runOnAttach;
+            }
+
+            public readonly Action<TContext> Action;
+
+            public readonly string Key;
+
+            public readonly bool RunOnAttach;
         }
     }
 }

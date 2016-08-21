@@ -1,35 +1,27 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace PropertyBinder.Engine
 {
-    internal interface IBindingNode<out TContext>
+    internal interface IBindingNode
     {
         bool HasBindingActions { get; }
 
-        IBindingNode<TContext> GetSubNode(BindableMember member);
+        IBindingNode GetSubNode(BindableMember member);
 
-        ICollectionBindingNode<TContext> GetCollectionNode(Type itemType);
+        ICollectionBindingNode GetCollectionNode(Type itemType);
 
-        void AddAction(string propertyName, Action<TContext> action);
-
-        void RemoveActionCascade(Action<TContext> action);
+        void AddAction(string propertyName, int actionIndex);
     }
 
-    internal interface IBindingNode<TContext, in TParent> : IBindingNode<TContext>
+    internal interface IBindingNode<in TParent> : IBindingNode
     {
-        IBindingNode<TNewContext, TParent> CloneForDerivedType<TNewContext>()
-            where TNewContext : class, TContext;
+        IBindingNode<TParent> Clone();
 
-        IBindingNode<TNewContext, TNewContext> CloneSubRootForDerivedType<TNewContext>()
-            where TNewContext : class, TContext, TParent;
+        IBindingNode<TNewParent> CloneForDerivedParentType<TNewParent>()
+            where TNewParent : TParent;
 
-        IObjectWatcher<TParent> CreateWatcher(TContext context);
-    }
-
-    internal interface IBindingNodeRoot<TContext> : IBindingNode<TContext, TContext>
-    {
-        IBindingNodeRoot<TNewContext> CloneRootForDerivedType<TNewContext>()
-            where TNewContext : class, TContext;
+        IObjectWatcher<TParent> CreateWatcher(Func<IEnumerable<int>, Binding[]> bindingsFactory);
     }
 
     internal interface IObjectWatcher<in TParent> : IDisposable

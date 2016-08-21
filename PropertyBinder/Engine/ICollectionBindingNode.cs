@@ -1,23 +1,24 @@
 using System;
+using System.Collections.Generic;
 
 namespace PropertyBinder.Engine
 {
-    internal interface ICollectionBindingNode<out TContext>
+    internal interface ICollectionBindingNode
     {
         bool HasBindingActions { get; }
 
-        IBindingNode<TContext> GetItemNode();
+        IBindingNode GetItemNode();
 
-        void AddAction(Action<TContext> action);
-
-        void RemoveActionCascade(Action<TContext> action);
+        void AddAction(int actionIndex);
     }
 
-    internal interface ICollectionBindingNode<TContext, in TCollection> : ICollectionBindingNode<TContext>
+    internal interface ICollectionBindingNode<in TCollection> : ICollectionBindingNode
     {
-        IObjectWatcher<TCollection> CreateWatcher(TContext context);
+        IObjectWatcher<TCollection> CreateWatcher(Func<IEnumerable<int>, Binding[]> bindingsfactory);
 
-        ICollectionBindingNode<TNewContext, TCollection> CloneForDerivedType<TNewContext>()
-            where TNewContext : class, TContext;
+        ICollectionBindingNode<TCollection> Clone();
+
+        ICollectionBindingNode<TNewCollection> CloneForDerivedParentType<TNewCollection>()
+            where TNewCollection : TCollection;
     }
 }
