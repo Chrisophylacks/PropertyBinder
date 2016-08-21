@@ -8,11 +8,11 @@ namespace PropertyBinder.Visitors
     internal sealed class BindingExpressionVisitor<TContext> : ExpressionVisitor
         where TContext : class
     {
-        private readonly IBindingNode<TContext> _rootNode;
+        private readonly IBindingNode _rootNode;
         private readonly Type _rootParameterType;
         private readonly int _actionIndex;
 
-        public BindingExpressionVisitor(IBindingNode<TContext> rootNode, Type rootParameterType, int actionIndex)
+        public BindingExpressionVisitor(IBindingNode rootNode, Type rootParameterType, int actionIndex)
         {
             _rootNode = rootNode;
             _rootParameterType = rootParameterType;

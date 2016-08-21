@@ -5,17 +5,17 @@ using System.Linq;
 
 namespace PropertyBinder.Engine
 {
-    internal class CollectionWatcher<TContext, TCollection, TItem> : IObjectWatcher<TCollection>
-        where TCollection : class, IEnumerable<TItem>
+    internal class CollectionWatcher<TCollection, TItem> : IObjectWatcher<TCollection>
+        where TCollection : IEnumerable<TItem>
     {
         private readonly Binding[] _ownBindings;
         private readonly Func<IEnumerable<int>, Binding[]> _bindingsFactory;
-        private readonly IBindingNode<TContext, TItem> _itemNode;
+        private readonly IBindingNode<TItem> _itemNode;
         private readonly IDictionary<TItem, IObjectWatcher<TItem>> _attachedItems = new Dictionary<TItem, IObjectWatcher<TItem>>();
 
         protected TCollection _target;
 
-        public CollectionWatcher(Binding[] ownBindings, Func<IEnumerable<int>, Binding[]> bindingsFactory, IBindingNode<TContext, TItem> itemNode)
+        public CollectionWatcher(Binding[] ownBindings, Func<IEnumerable<int>, Binding[]> bindingsFactory, IBindingNode<TItem> itemNode)
         {
             _ownBindings = ownBindings;
             _bindingsFactory = bindingsFactory;
@@ -48,7 +48,7 @@ namespace PropertyBinder.Engine
 
         public void Dispose()
         {
-            Attach(null);
+            Attach(default(TCollection));
         }
 
         protected virtual void TargetCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)

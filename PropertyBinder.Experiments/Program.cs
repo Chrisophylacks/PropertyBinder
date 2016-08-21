@@ -43,7 +43,7 @@ namespace PropertyBinder.Experiments
             var sw = new Stopwatch();
             sw.Start();
 
-            for (int i = 0; i < 10000; ++i)
+            for (int i = 0; i < 50000; ++i)
             {
                 consumer.Source.Model = model1;
                 if (consumer.FormattedAggregate != "30.0")

@@ -2,9 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Security.Cryptography.X509Certificates;
 using PropertyBinder.Engine;
-using PropertyBinder.Helpers;
 using PropertyBinder.Visitors;
 
 namespace PropertyBinder
@@ -12,10 +10,10 @@ namespace PropertyBinder
     public sealed class Binder<TContext>
         where TContext : class
     {
-        private readonly IBindingNodeRoot<TContext> _rootNode;
+        private readonly IBindingNode<TContext> _rootNode;
         private readonly List<BindingAction> _actions;
 
-        private Binder(IBindingNodeRoot<TContext> rootNode, List<BindingAction> actions)
+        private Binder(IBindingNode<TContext> rootNode, List<BindingAction> actions)
         {
             _rootNode = rootNode;
             _actions = actions;
@@ -29,7 +27,7 @@ namespace PropertyBinder
         public Binder<TNewContext> Clone<TNewContext>()
             where TNewContext : class, TContext
         {
-            return new Binder<TNewContext>(_rootNode.CloneRootForDerivedType<TNewContext>(), _actions.Select(x => new Binder<TNewContext>.BindingAction(x.Action, x.Key, x.RunOnAttach)).ToList());
+            return new Binder<TNewContext>(_rootNode.CloneForDerivedParentType<TNewContext>(), _actions.Select(x => new Binder<TNewContext>.BindingAction(x.Action, x.Key, x.RunOnAttach)).ToList());
         }
 
         public Binder<TContext> Clone()

@@ -18,12 +18,14 @@ namespace PropertyBinder.Engine
         private readonly IDictionary<string, Binding[]> _bindings;
         private readonly Func<TParent, TNode> _targetSelector;
         private TNode _target;
+        private readonly PropertyChangedEventHandler _handler;
 
         public ObjectWatcher(Func<TParent, TNode> targetSelector, IDictionary<string, IObjectWatcher<TNode>> subWatchers, IDictionary<string, Binding[]> bindings)
         {
             _targetSelector = targetSelector;
             _subWatchers = subWatchers;
             _bindings = bindings;
+            _handler = _subWatchers == null ? TerminalTargetPropertyChanged : new PropertyChangedEventHandler(TargetPropertyChanged);
         }
 
         public void Attach(TParent parent)
@@ -33,7 +35,7 @@ namespace PropertyBinder.Engine
                 var notify = _target as INotifyPropertyChanged;
                 if (notify != null)
                 {
-                    notify.PropertyChanged -= TargetPropertyChanged;
+                    notify.PropertyChanged -= _handler;
                 }
             }
 
@@ -44,7 +46,7 @@ namespace PropertyBinder.Engine
                 var notify = _target as INotifyPropertyChanged;
                 if (notify != null)
                 {
-                    notify.PropertyChanged += TargetPropertyChanged;
+                    notify.PropertyChanged += _handler;
                 }
             }
 
@@ -65,11 +67,21 @@ namespace PropertyBinder.Engine
         private void TargetPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             IObjectWatcher<TNode> node;
-            if (_subWatchers != null && _subWatchers.TryGetValue(e.PropertyName, out node))
+            var propertyName = e.PropertyName;
+            if (_subWatchers.TryGetValue(e.PropertyName, out node))
             {
                 node.Attach(_target);
             }
 
+            Binding[] bindings;
+            if (_bindings.TryGetValue(propertyName, out bindings))
+            {
+                BindingExecutor.Execute(bindings);
+            }
+        }
+
+        private void TerminalTargetPropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
             Binding[] bindings;
             if (_bindings.TryGetValue(e.PropertyName, out bindings))
             {

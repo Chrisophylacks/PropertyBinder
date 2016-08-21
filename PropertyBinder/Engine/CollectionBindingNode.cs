@@ -1,17 +1,15 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using PropertyBinder.Helpers;
 
 namespace PropertyBinder.Engine
 {
-    internal sealed class CollectionBindingNode<TContext, TCollection, TItem> : ICollectionBindingNode<TContext, TCollection>
-        where TCollection : class, IEnumerable<TItem>
+    internal sealed class CollectionBindingNode<TCollection, TItem> : ICollectionBindingNode<TCollection>
+        where TCollection : IEnumerable<TItem>
     {
         private readonly List<int> _indexes;
-        private IBindingNode<TContext, TItem> _itemNode;
+        private IBindingNode<TItem> _itemNode;
 
-        private CollectionBindingNode(List<int> indexes, IBindingNode<TContext, TItem> itemNode)
+        private CollectionBindingNode(List<int> indexes, IBindingNode<TItem> itemNode)
         {
             _indexes = indexes;
             _itemNode = itemNode;
@@ -32,20 +30,26 @@ namespace PropertyBinder.Engine
             _indexes.Add(index);
         }
 
-        public IBindingNode<TContext> GetItemNode()
+        public IBindingNode GetItemNode()
         {
-            return _itemNode ?? (_itemNode = new BindingNode<TContext, TItem, TItem>(_ => _));
+            return _itemNode ?? (_itemNode = new BindingNode<TItem, TItem>(_ => _));
         }
 
         public IObjectWatcher<TCollection> CreateWatcher(Func<IEnumerable<int>, Binding[]> bindingsFactory)
         {
-            return new CollectionWatcher<TContext, TCollection, TItem>(bindingsFactory(_indexes), bindingsFactory, HasBindingActions ? _itemNode : null);
+            return new CollectionWatcher<TCollection, TItem>(bindingsFactory(_indexes), bindingsFactory, HasBindingActions ? _itemNode : null);
         }
 
-        public ICollectionBindingNode<TNewContext, TCollection> CloneForDerivedType<TNewContext>()
-            where TNewContext : class, TContext
+        public ICollectionBindingNode<TCollection> Clone()
         {
-            return new CollectionBindingNode<TNewContext, TCollection, TItem>(new List<int>(_indexes), _itemNode != null ? _itemNode.CloneForDerivedType<TNewContext>() : null);
+            return new CollectionBindingNode<TCollection, TItem>(new List<int>(_indexes), _itemNode != null ? _itemNode.Clone() : null);
         }
+
+        public ICollectionBindingNode<TNewCollection> CloneForDerivedParentType<TNewCollection>()
+            where TNewCollection : TCollection
+        {
+            return new CollectionBindingNode<TNewCollection, TItem>(new List<int>(_indexes), _itemNode != null ? _itemNode.Clone() : null);
+        }
+
     }
 }
