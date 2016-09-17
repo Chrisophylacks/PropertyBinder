@@ -8,15 +8,33 @@ namespace PropertyBinder.Engine
         [ThreadStatic]
         private static BindingExecutor _instance;
 
+        private static BindingExecutor Instance
+        {
+            get
+            {
+                var instance = _instance;
+                if (instance == null)
+                {
+                    _instance = instance = new BindingExecutor();
+                }
+                return instance;
+            }
+        }
+
         public static void Execute(Binding[] bindings)
         {
-            var instance = _instance;
-            if (instance == null)
-            {
-                _instance = instance = new BindingExecutor();
-            }
+            Instance.ExecuteInternal(bindings);
+        }
 
-            instance.ExecuteInternal(bindings);
+        public static void Suspend()
+        {
+            Instance._isExecuting = true;
+        }
+
+        public static void Resume()
+        {
+            Instance._isExecuting = false;
+            Instance.ExecuteInternal(new Binding[0]);
         }
 
         private readonly Queue<Binding> _bindings = new Queue<Binding>();

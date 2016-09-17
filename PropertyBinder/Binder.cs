@@ -101,4 +101,25 @@ namespace PropertyBinder
             public readonly bool RunOnAttach;
         }
     }
+
+    public static class Binder
+    {
+        private sealed class BindingTransaction : IDisposable
+        {
+            public BindingTransaction()
+            {
+                BindingExecutor.Suspend();
+            }
+
+            public void Dispose()
+            {
+                BindingExecutor.Resume();
+            }
+        }
+
+        public static IDisposable BeginTransaction()
+        {
+            return new BindingTransaction();
+        }
+    }
 }

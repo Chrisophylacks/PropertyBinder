@@ -15,7 +15,7 @@ namespace PropertyBinder.Visitors
 
         protected override Expression VisitMember(MemberExpression node)
         {
-            if (node.Expression == _rootParameter || !IsNullable(node.Expression.Type))
+            if (node.Expression == _rootParameter || node.Expression == null || !IsNullable(node.Expression.Type))
             {
                 return base.VisitMember(node);
             }

@@ -6,6 +6,10 @@
 namespace PropertyBinder
 {
     
+    public class static Binder
+    {
+        public static System.IDisposable BeginTransaction() { }
+    }
     public sealed class Binder<TContext>
         where TContext :  class
     {

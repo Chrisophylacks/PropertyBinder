@@ -11,7 +11,7 @@ namespace PropertyBinder.Tests
         [Test]
         public void ShouldPropagateNulls()
         {
-            _binder.Bind(x => (int?)x.String.Length).PropagateNullValues().To(x => x.NullableInt);
+            _binder.Bind(x => (int?) x.String.Length).PropagateNullValues().To(x => x.NullableInt);
             using (_binder.Attach(_stub))
             {
                 _stub.NullableInt.ShouldBe(null);
@@ -57,7 +57,7 @@ namespace PropertyBinder.Tests
         [Test]
         public void ShouldPropagateNullsWhenBindingToActions()
         {
-            _binder.Bind(x => (int?)x.String.Length).PropagateNullValues().To((x, v) => x.NullableInt = v);
+            _binder.Bind(x => (int?) x.String.Length).PropagateNullValues().To((x, v) => x.NullableInt = v);
             using (_binder.Attach(_stub))
             {
                 _stub.NullableInt.ShouldBe(null);
@@ -73,7 +73,7 @@ namespace PropertyBinder.Tests
         [Test]
         public void ShouldPropagateNullsThroughStaticMethods()
         {
-            _binder.Bind(x => (int?)Math.Pow(x.Nested.Int, 2)).PropagateNullValues().To(x => x.NullableInt);
+            _binder.Bind(x => (int?) Math.Pow(x.Nested.Int, 2)).PropagateNullValues().To(x => x.NullableInt);
             using (_binder.Attach(_stub))
             {
                 _stub.NullableInt.ShouldBe(null);
@@ -83,6 +83,22 @@ namespace PropertyBinder.Tests
                 _stub.NullableInt.ShouldBe(9);
                 _stub.Nested = null;
                 _stub.NullableInt.ShouldBe(null);
+            }
+        }
+
+        [Test]
+        public void ShouldPropagateNullsThroughStaticProperties()
+        {
+            _binder.Bind(x => x.Nested.String ?? string.Empty).PropagateNullValues().To(x => x.String);
+            using (_binder.Attach(_stub))
+            {
+                _stub.String.ShouldBe(string.Empty);
+                _stub.Nested = new UniversalStub();
+                _stub.String.ShouldBe(string.Empty);
+                _stub.Nested.String = "a";
+                _stub.String.ShouldBe("a");
+                _stub.Nested = null;
+                _stub.String.ShouldBe(string.Empty);
             }
         }
     }
