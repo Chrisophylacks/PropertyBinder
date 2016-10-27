@@ -35,6 +35,16 @@ namespace PropertyBinder
             return Clone<TContext>();
         }
 
+        public IDisposable BeginTransaction()
+        {
+            return PropertyBinder.Binder.BeginTransaction();
+        }
+
+        public static BindingFrame[] TraceBindings()
+        {
+            return PropertyBinder.Binder.TraceBindings();
+        }
+
         internal void AddRule(Action<TContext> bindingAction, string key, bool runOnAttach, bool canOverride, IEnumerable<Expression> triggerExpressions)
         {
             if (!string.IsNullOrEmpty(key) && canOverride)
@@ -56,7 +66,7 @@ namespace PropertyBinder
             {
                 if (_actions[i].Key == key)
                 {
-                    _actions[i] = default(BindingAction);
+                    _actions[i] = null;
                 }
             }
         }
@@ -66,8 +76,8 @@ namespace PropertyBinder
             var dict = new Dictionary<int, Binding>();
             for (int i = 0; i < _actions.Count; ++i)
             {
-                var action = _actions[i].Action;
-                dict.Add(i, action != null ? new Binding(() => action(context)) : null);
+                var action = _actions[i];
+                dict.Add(i, action != null ? new ContextualBinding(_actions[i], context) : null);
             }
 
             var factory = new Func<IEnumerable<int>, Binding[]>(e => e.Select(x => dict[x]).Where(x => x != null).ToArray());
@@ -76,7 +86,7 @@ namespace PropertyBinder
 
             foreach (var action in _actions)
             {
-                if (action.Action != null && action.RunOnAttach)
+                if (action != null && action.RunOnAttach)
                 {
                     action.Action(context);
                 }
@@ -85,7 +95,7 @@ namespace PropertyBinder
             return watcher;
         }
 
-        private struct BindingAction
+        internal sealed class BindingAction
         {
             public BindingAction(Action<TContext> action, string key, bool runOnAttach)
             {
@@ -99,6 +109,33 @@ namespace PropertyBinder
             public readonly string Key;
 
             public readonly bool RunOnAttach;
+        }
+
+        internal sealed class ContextualBinding : Binding
+        {
+            private readonly BindingAction _bindingAction;
+            private readonly TContext _context;
+
+            public ContextualBinding(BindingAction bindingAction, TContext context)
+            {
+                _bindingAction = bindingAction;
+                _context = context;
+            }
+
+            public override void Execute()
+            {
+                _bindingAction.Action(_context);
+            }
+
+            public override string Key
+            {
+                get { return _bindingAction.Key; }
+            }
+
+            public override object Context
+            {
+                get { return _context; }
+            }
         }
     }
 
@@ -120,6 +157,11 @@ namespace PropertyBinder
         public static IDisposable BeginTransaction()
         {
             return new BindingTransaction();
+        }
+
+        public static BindingFrame[] TraceBindings()
+        {
+            return BindingExecutor.TraceBindings().Select(x => new BindingFrame(x.Key, x.Context)).ToArray();
         }
     }
 }

@@ -49,9 +49,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DebuggingStubs.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Stubs.cs" />
+    <Compile Include="PerformanceStubs.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

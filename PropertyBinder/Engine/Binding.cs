@@ -1,16 +1,13 @@
-using System;
-
 namespace PropertyBinder.Engine
 {
-    internal sealed class Binding
+    internal abstract class Binding
     {
-        public Binding(Action action)
-        {
-            Action = action;
-        }
-
-        public readonly Action Action;
-
         public bool IsScheduled;
+
+        public abstract string Key { get; }
+
+        public abstract object Context { get; }
+
+        public abstract void Execute();
     }
 }

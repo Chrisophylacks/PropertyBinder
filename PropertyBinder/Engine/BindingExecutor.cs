@@ -28,17 +28,33 @@ namespace PropertyBinder.Engine
 
         public static void Suspend()
         {
-            Instance._isExecuting = true;
+            Instance._executingBinding = new ScheduledBinding(null, Instance._executingBinding);
         }
 
         public static void Resume()
         {
-            Instance._isExecuting = false;
+            Instance._executingBinding = Instance._executingBinding?.Parent;
             Instance.ExecuteInternal(new Binding[0]);
         }
 
-        private readonly Queue<Binding> _bindings = new Queue<Binding>();
-        private bool _isExecuting;
+        public static IEnumerable<Binding> TraceBindings()
+        {
+            var bindings = new List<Binding>();
+            var current = Instance._executingBinding;
+
+            while (current != null)
+            {
+                bindings.Add(current.Binding);
+                current = current.Parent;
+            }
+
+            bindings.Reverse();
+
+            return bindings;
+        }
+
+        private readonly Queue<ScheduledBinding> _scheduledBindings = new Queue<ScheduledBinding>();
+        private ScheduledBinding _executingBinding;
 
         private void ExecuteInternal(Binding[] bindings)
         {
@@ -46,37 +62,49 @@ namespace PropertyBinder.Engine
             {
                 if (!binding.IsScheduled)
                 {
-                    _bindings.Enqueue(binding);
+                    _scheduledBindings.Enqueue(new ScheduledBinding(binding, _executingBinding));
                     binding.IsScheduled = true;
                 }
             }
 
-            if (!_isExecuting)
+            if (_executingBinding == null)
             {
                 try
                 {
-                    _isExecuting = true;
-                    while (_bindings.Count > 0)
+                    while (_scheduledBindings.Count > 0)
                     {
-                        var binding = _bindings.Dequeue();
-                        binding.IsScheduled = false;
-                        binding.Action();
+                        _executingBinding = _scheduledBindings.Dequeue();
+                        _executingBinding.Binding.IsScheduled = false;
+                        _executingBinding.Binding.Execute();
                     }
                 }
                 catch (Exception)
                 {
-                    foreach (var binding in _bindings)
+                    foreach (var tp in _scheduledBindings)
                     {
-                        binding.IsScheduled = false;
+                        tp.Binding.IsScheduled = false;
                     }
-                    _bindings.Clear();
+                    _scheduledBindings.Clear();
                     throw;
                 }
                 finally
                 {
-                    _isExecuting = false;
+                    _executingBinding = null;
                 }
             }
+        }
+
+        private sealed class ScheduledBinding
+        {
+            public ScheduledBinding(Binding binding, ScheduledBinding parent)
+            {
+                Binding = binding;
+                Parent = parent;
+            }
+
+            public readonly Binding Binding;
+
+            public readonly ScheduledBinding Parent;
         }
     }
 }
