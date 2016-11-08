@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 
 namespace PropertyBinder.Engine
 {
@@ -7,6 +9,10 @@ namespace PropertyBinder.Engine
     {
         [ThreadStatic]
         private static BindingExecutor _instance;
+
+        private static bool _useVirtualStack;
+
+        private static Action<string> _tracer;
 
         private static BindingExecutor Instance
         {
@@ -21,6 +27,11 @@ namespace PropertyBinder.Engine
             }
         }
 
+        public static void SetTracingMethod(Action<string> tracer)
+        {
+            _tracer = tracer;
+        }
+
         public static void Execute(Binding[] bindings)
         {
             Instance.ExecuteInternal(bindings);
@@ -28,7 +39,7 @@ namespace PropertyBinder.Engine
 
         public static void Suspend()
         {
-            Instance._executingBinding = new ScheduledBinding(null, Instance._executingBinding);
+            Instance._executingBinding = new ScheduledBinding(TransactionBinding.Instance, Instance._executingBinding);
         }
 
         public static void Resume()
@@ -53,6 +64,11 @@ namespace PropertyBinder.Engine
             return bindings;
         }
 
+        private BindingExecutor()
+        {
+            _useVirtualStack = Debugger.IsAttached;
+        }
+
         private readonly Queue<ScheduledBinding> _scheduledBindings = new Queue<ScheduledBinding>();
         private ScheduledBinding _executingBinding;
 
@@ -64,6 +80,11 @@ namespace PropertyBinder.Engine
                 {
                     _scheduledBindings.Enqueue(new ScheduledBinding(binding, _executingBinding));
                     binding.IsScheduled = true;
+                    _tracer?.Invoke(string.Format("Scheduled binding {0}", binding.DebugContext.Description));
+                }
+                else
+                {
+                    _tracer?.Invoke(string.Format("Ignored binding {0}", binding.DebugContext.Description));
                 }
             }
 
@@ -75,7 +96,15 @@ namespace PropertyBinder.Engine
                     {
                         _executingBinding = _scheduledBindings.Dequeue();
                         _executingBinding.Binding.IsScheduled = false;
-                        _executingBinding.Binding.Execute();
+                        _tracer?.Invoke(string.Format("Executing binding {0}", _executingBinding.Binding.DebugContext.Description));
+                        if (_useVirtualStack)
+                        {
+                            ExecuteWithVirtualStack();
+                        }
+                        else
+                        {
+                            _executingBinding.Binding.Execute();
+                        }
                     }
                 }
                 catch (Exception)
@@ -92,6 +121,12 @@ namespace PropertyBinder.Engine
                     _executingBinding = null;
                 }
             }
+        }
+
+        private static void ExecuteWithVirtualStack()
+        {
+            var bindings = TraceBindings().ToArray();
+            bindings[0].DebugContext.VirtualFrame(bindings, 0);
         }
 
         private sealed class ScheduledBinding

@@ -43,8 +43,11 @@
     <Compile Include="BinderExtensions.cs" />
     <Compile Include="BindingFrame.cs" />
     <Compile Include="CommandRuleBinder.cs" />
+    <Compile Include="Diagnostics\VirtualFrameCompiler.cs" />
     <Compile Include="ConditionalRuleBuilder.cs" />
+    <Compile Include="Diagnostics\DebugContext.cs" />
     <Compile Include="Decompiler\Operation.cs" />
+    <Compile Include="Diagnostics\DebugContextBuilder.cs" />
     <Compile Include="Engine\BindableMember.cs" />
     <Compile Include="Engine\BindingTrigger.cs" />
     <Compile Include="Engine\BindingExecutor.cs" />
@@ -56,6 +59,7 @@
     <Compile Include="Engine\ObjectBindingNode.cs" />
     <Compile Include="Engine\ObjectWatcher.cs" />
     <Compile Include="Decompiler\MethodAnalyzer.cs" />
+    <Compile Include="Engine\TransactionBinding.cs" />
     <Compile Include="Helpers\ExpressionHelpers.cs" />
     <Compile Include="Decompiler\IlReader.cs" />
     <Compile Include="Helpers\ReferenceEqualityComparer.cs" />
@@ -69,7 +73,9 @@
     <Compile Include="Visitors\NullPropagationVisitor.cs" />
     <Compile Include="Visitors\ReplaceParameterVisitor.cs" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Compiler\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

@@ -113,5 +113,32 @@ namespace PropertyBinder.Tests
                 stub.Int.ShouldBe(2);
             }
         }
+
+        [Test]
+        public void ShouldNotDuplicateBindingsInClonedBinder()
+        {
+            int callCount = 0;
+            _binder.Bind(x => x.Int.ToString()).To((x, v) =>
+            {
+                ++callCount;
+                x.String = v;
+            });
+
+            var binderEx = _binder.Clone<UniversalStubEx>();
+            var stub = new UniversalStubEx();
+
+            using (binderEx.Attach(stub))
+            {
+                stub.String.ShouldBe("0");
+                callCount.ShouldBe(1);
+
+                using (stub.VerifyChangedOnce("String"))
+                {
+                    stub.Int = 1;
+                }
+                stub.String.ShouldBe("1");
+                callCount.ShouldBe(2);
+            }
+        }
     }
 }

@@ -1,10 +1,17 @@
+using PropertyBinder.Diagnostics;
+
 namespace PropertyBinder.Engine
 {
     internal abstract class Binding
     {
+        public readonly DebugContext DebugContext;
+
         public bool IsScheduled;
 
-        public abstract string Key { get; }
+        protected Binding(DebugContext debugContext)
+        {
+            DebugContext = debugContext;
+        }
 
         public abstract object Context { get; }
 

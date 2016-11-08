@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using PropertyBinder.Diagnostics;
 using PropertyBinder.Engine;
 using PropertyBinder.Visitors;
 
@@ -27,7 +28,9 @@ namespace PropertyBinder
         public Binder<TNewContext> Clone<TNewContext>()
             where TNewContext : class, TContext
         {
-            return new Binder<TNewContext>(_rootNode.CloneForDerivedParentType<TNewContext>(), _actions.Select(x => new Binder<TNewContext>.BindingAction(x.Action, x.Key, x.RunOnAttach)).ToList());
+            return new Binder<TNewContext>(
+                _rootNode.CloneForDerivedParentType<TNewContext>(),
+                _actions.Select(x => x != null ? new Binder<TNewContext>.BindingAction(x.Action, x.Key, x.DebugContext, x.RunOnAttach) : null).ToList());
         }
 
         public Binder<TContext> Clone()
@@ -37,22 +40,17 @@ namespace PropertyBinder
 
         public IDisposable BeginTransaction()
         {
-            return PropertyBinder.Binder.BeginTransaction();
+            return Binder.BeginTransaction();
         }
 
-        public static BindingFrame[] TraceBindings()
-        {
-            return PropertyBinder.Binder.TraceBindings();
-        }
-
-        internal void AddRule(Action<TContext> bindingAction, string key, bool runOnAttach, bool canOverride, IEnumerable<Expression> triggerExpressions)
+        internal void AddRule(Action<TContext> bindingAction, string key, DebugContext debugContext, bool runOnAttach, bool canOverride, IEnumerable<Expression> triggerExpressions)
         {
             if (!string.IsNullOrEmpty(key) && canOverride)
             {
                 RemoveRule(key);
             }
 
-            _actions.Add(new BindingAction(bindingAction, key, runOnAttach));
+            _actions.Add(new BindingAction(bindingAction, key, debugContext, runOnAttach));
 
             foreach (var expr in triggerExpressions)
             {
@@ -64,7 +62,7 @@ namespace PropertyBinder
         {
             for (int i = 0; i < _actions.Count; ++i)
             {
-                if (_actions[i].Key == key)
+                if (_actions[i] != null && _actions[i].Key == key)
                 {
                     _actions[i] = null;
                 }
@@ -97,18 +95,21 @@ namespace PropertyBinder
 
         internal sealed class BindingAction
         {
-            public BindingAction(Action<TContext> action, string key, bool runOnAttach)
+            public BindingAction(Action<TContext> action, string key, DebugContext debugContext, bool runOnAttach)
             {
                 Action = action;
                 Key = key;
+                DebugContext = debugContext;
                 RunOnAttach = runOnAttach;
             }
 
             public readonly Action<TContext> Action;
 
+            public readonly bool RunOnAttach;
+
             public readonly string Key;
 
-            public readonly bool RunOnAttach;
+            public readonly DebugContext DebugContext;
         }
 
         internal sealed class ContextualBinding : Binding
@@ -117,6 +118,7 @@ namespace PropertyBinder
             private readonly TContext _context;
 
             public ContextualBinding(BindingAction bindingAction, TContext context)
+                : base(bindingAction.DebugContext)
             {
                 _bindingAction = bindingAction;
                 _context = context;
@@ -127,15 +129,7 @@ namespace PropertyBinder
                 _bindingAction.Action(_context);
             }
 
-            public override string Key
-            {
-                get { return _bindingAction.Key; }
-            }
-
-            public override object Context
-            {
-                get { return _context; }
-            }
+            public override object Context => _context;
         }
     }
 
@@ -159,9 +153,9 @@ namespace PropertyBinder
             return new BindingTransaction();
         }
 
-        public static BindingFrame[] TraceBindings()
+        public static void SetTracingMethod(Action<string> tracer)
         {
-            return BindingExecutor.TraceBindings().Select(x => new BindingFrame(x.Key, x.Context)).ToArray();
+            BindingExecutor.SetTracingMethod(tracer);
         }
     }
 }

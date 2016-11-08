@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using PropertyBinder.Diagnostics;
 using PropertyBinder.Helpers;
 
 namespace PropertyBinder
@@ -28,28 +29,28 @@ namespace PropertyBinder
         where TContext : class
     {
         private readonly Binder<TContext> _binder;
-        private readonly List<Tuple<Expression, Expression>> _clauses = new List<Tuple<Expression, Expression>>();
-        private Expression _defaultExpression;
+        private readonly List<Tuple<Expression, Expression, DebugContextBuilder>> _clauses = new List<Tuple<Expression, Expression, DebugContextBuilder>>();
         private readonly ParameterExpression _contextParameter;
         private bool _runOnAttach = true;
         private bool _canOverride = true;
         private string _key;
 
-        public ConditionalRuleBuilder(Binder<TContext> binder)
+        public ConditionalRuleBuilder(Binder<TContext> binder, Expression<Func<TContext, bool>> conditionalExpression, Expression<Func<TContext, T>> targetExpression)
         {
             _binder = binder;
             _contextParameter = Expression.Parameter(typeof (TContext));
+            _clauses.Add(Tuple.Create(conditionalExpression.GetBodyWithReplacedParameter(_contextParameter), targetExpression.GetBodyWithReplacedParameter(_contextParameter), new DebugContextBuilder(2, targetExpression, " (branch 0)")));
         }
 
         public IConditionalRuleBuilderPhase1<T, TContext> ElseIf(Expression<Func<TContext, bool>> conditionalExpression, Expression<Func<TContext, T>> targetExpression)
         {
-            _clauses.Add(Tuple.Create(conditionalExpression.GetBodyWithReplacedParameter(_contextParameter), targetExpression.GetBodyWithReplacedParameter(_contextParameter)));
+            _clauses.Add(Tuple.Create(conditionalExpression.GetBodyWithReplacedParameter(_contextParameter), targetExpression.GetBodyWithReplacedParameter(_contextParameter), new DebugContextBuilder(1, targetExpression, string.Format(" (branch {0})", _clauses.Count))));
             return this;
         }
 
         public IConditionalRuleBuilderPhase2<T, TContext> Else(Expression<Func<TContext, T>> targetExpression)
         {
-            _defaultExpression = targetExpression.GetBodyWithReplacedParameter(_contextParameter);
+            _clauses.Add(Tuple.Create((Expression)null, targetExpression.GetBodyWithReplacedParameter(_contextParameter), new DebugContextBuilder(1, targetExpression, string.Format(" (branch {0})", _clauses.Count))));
             return this;
         }
 
@@ -67,16 +68,16 @@ namespace PropertyBinder
             var targetParent = ((MemberExpression)targetExpression.Body).Expression;
             var targetParameter = targetExpression.Parameters[0];
 
-            for (int i = 0; i <= _clauses.Count; ++i)
+            for (int i = 0; i < _clauses.Count; ++i)
             {
-                var sourceExpression = i == _clauses.Count ? _defaultExpression : _clauses[i].Item2;
+                var sourceExpression = _clauses[i].Item2;
                 if (sourceExpression == null)
                 {
                     break;
                 }
 
-                var conditionExpression = i == _clauses.Count
-                    ? Expression.Not(CombineOr(_clauses.Select(x => x.Item1)))
+                var conditionExpression = _clauses[i].Item1 == null
+                    ? Expression.Not(CombineOr(_clauses.Take(i).Select(x => x.Item1)))
                     : i > 0
                         ? Expression.AndAlso(Expression.Not(CombineOr(_clauses.Take(i).Select(x => x.Item1))), _clauses[i].Item1)
                         : _clauses[i].Item1;
@@ -97,7 +98,7 @@ namespace PropertyBinder
                     dependencies.Add(targetParent);
                 }
 
-                _binder.AddRule(assignment, key, _runOnAttach, i == 0 && _canOverride, dependencies);
+                _binder.AddRule(assignment, key, _clauses[i].Item3.CreateContext(typeof(TContext).Name, key), _runOnAttach, i == 0 && _canOverride, dependencies);
             }
         }
 
@@ -105,9 +106,9 @@ namespace PropertyBinder
         {
             var actionParameter = Expression.Parameter(typeof(Action<TContext, T>));
 
-            for (int i = 0; i <= _clauses.Count; ++i)
+            for (int i = 0; i < _clauses.Count; ++i)
             {
-                var sourceExpression = i == _clauses.Count ? _defaultExpression : _clauses[i].Item2;
+                var sourceExpression = _clauses[i].Item2;
                 if (sourceExpression == null)
                 {
                     break;
@@ -118,8 +119,8 @@ namespace PropertyBinder
                     _contextParameter,
                     sourceExpression);
 
-                var conditionExpression = i == _clauses.Count
-                    ? Expression.Not(CombineOr(_clauses.Select(x => x.Item1))) 
+                var conditionExpression = _clauses[i].Item1 == null
+                    ? Expression.Not(CombineOr(_clauses.Take(i).Select(x => x.Item1))) 
                     : i > 0
                         ? Expression.AndAlso(Expression.Not(CombineOr(_clauses.Take(i).Select(x => x.Item1))), _clauses[i].Item1)
                         : _clauses[i].Item1;
@@ -127,7 +128,7 @@ namespace PropertyBinder
                 var invokeExpression = Expression.IfThen(conditionExpression, innerExpression);
                 var invoke = Expression.Lambda<Action<TContext, Action<TContext, T>>>(invokeExpression, _contextParameter, actionParameter).Compile();
 
-                _binder.AddRule(ctx => invoke(ctx, action), _key, _runOnAttach, i == 0 && _canOverride, new[] { invokeExpression });
+                _binder.AddRule(ctx => invoke(ctx, action), _key, _clauses[i].Item3.CreateContext(typeof(TContext).Name, _key), _runOnAttach, i == 0 && _canOverride, new[] { invokeExpression });
             }
         }
 

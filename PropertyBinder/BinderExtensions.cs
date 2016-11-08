@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Linq.Expressions;
 using PropertyBinder.Decompiler;
 using PropertyBinder.Helpers;
@@ -28,7 +29,7 @@ namespace PropertyBinder
         public static IConditionalRuleBuilderPhase1<T, TContext> BindIf<T, TContext>(this Binder<TContext> binder, Expression<Func<TContext, bool>> conditionalExpression, Expression<Func<TContext, T>> targetExpression)
             where TContext : class
         {
-            return new ConditionalRuleBuilder<T, TContext>(binder).ElseIf(conditionalExpression, targetExpression);
+            return new ConditionalRuleBuilder<T, TContext>(binder, conditionalExpression, targetExpression);
         }
 
         internal static void BindEvent<TContext>(this Binder<TContext> binder, Action<TContext> eventSubscription)
@@ -38,7 +39,7 @@ namespace PropertyBinder
             Expression right;
             Action<TContext> unsubscribe;
             MethodAnalyzer.SplitEventExpression(eventSubscription, out left, out right, out unsubscribe);
-            binder.AddRule(null, null, true, false, new[] { left, right });
+            binder.AddRule(null, null, null, true, false, new[] { left, right });
         }
     }
 }

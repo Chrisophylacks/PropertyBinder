@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using PropertyBinder.Diagnostics;
 using PropertyBinder.Helpers;
 using PropertyBinder.Visitors;
 
@@ -17,11 +18,13 @@ namespace PropertyBinder
         private bool _propagateNullValues;
         private Action<TContext> _debugAction;
         private string _key;
+        private readonly DebugContextBuilder _debugContext;
 
         internal PropertyRuleBuilder(Binder<TContext> binder, Expression<Func<TContext, T>> sourceExpression)
         {
             _binder = binder;
             _sourceExpression = sourceExpression;
+            _debugContext = new DebugContextBuilder(2, sourceExpression, null);
             _dependencies.Add(_sourceExpression.Body);
         }
 
@@ -55,20 +58,22 @@ namespace PropertyBinder
 
         public void To(Action<TContext, T> action)
         {
-            Func<TContext, T> getValue;
+            Expression getValueExpression = _sourceExpression.Body;
+            var contextParameter = _sourceExpression.Parameters[0];
             if (_propagateNullValues)
             {
-                getValue = Expression.Lambda<Func<TContext, T>>(
-                    new NullPropagationVisitor(_sourceExpression.Parameters[0]).Visit(_sourceExpression.Body),
-                    _sourceExpression.Parameters[0])
-                    .Compile();
-            }
-            else
-            {
-                getValue = _sourceExpression.Compile();
+                getValueExpression = new NullPropagationVisitor(contextParameter).Visit(_sourceExpression.Body);
             }
 
-            AddRule(ctx => action(ctx, getValue(ctx)), _key);
+            var finalExpression = Expression.Lambda<Action<TContext>>(
+                Expression.Call(
+                    Expression.Constant(action),
+                    typeof (Action<TContext, T>).GetMethod("Invoke"),
+                    contextParameter,
+                    getValueExpression),
+                contextParameter);
+
+            AddRule(finalExpression.Compile(), _key);
         }
 
         public void To(Action<TContext> action)
@@ -113,7 +118,8 @@ namespace PropertyBinder
 
         private void AddRule(Action<TContext> action, string key)
         {
-            _binder.AddRule(_debugAction == null ? action : _debugAction + action, key, _runOnAttach, _canOverride, _dependencies);
+            var description = string.Format("{0} to {1}.{2}", _sourceExpression.Body, typeof(TContext).Name, key ?? "SomeAction");
+            _binder.AddRule(_debugAction == null ? action : _debugAction + action, key, _debugContext.CreateContext(typeof(TContext).Name, key), _runOnAttach, _canOverride, _dependencies);
         }
     }
 }

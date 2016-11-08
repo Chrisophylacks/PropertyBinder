@@ -13,7 +13,8 @@ namespace PropertyBinder.Experiments
     {
         static void Main(string[] args)
         {
-            PerformanceTest();
+            DebugTest();
+            //PerformanceTest();
         }
 
         private sealed class BindingAction<T>
@@ -123,9 +124,13 @@ namespace PropertyBinder.Experiments
 
         private static void DebugTest()
         {
+            Binder.SetTracingMethod(x => Console.WriteLine("[binder] " + x));
             var user = new UserModel();
-            user.Source = new SourceModel();
-            user.Source.DefaultValue = 1;
+            using (Binder.BeginTransaction())
+            {
+                user.Source = new SourceModel();
+                user.Source.DefaultValue = 1;
+            }
         }
 
         private static void PerformanceTest()

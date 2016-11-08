@@ -1,3 +1,4 @@
+[assembly: System.Runtime.CompilerServices.InternalsVisibleToAttribute("PropertyBinder.Bindings")]
 [assembly: System.Runtime.CompilerServices.InternalsVisibleToAttribute("PropertyBinder.Tests")]
 [assembly: System.Runtime.InteropServices.ComVisibleAttribute(false)]
 [assembly: System.Runtime.InteropServices.GuidAttribute("f2800cdd-5dd1-4cbf-9808-fc1a00d67c1a")]
@@ -9,7 +10,7 @@ namespace PropertyBinder
     public class static Binder
     {
         public static System.IDisposable BeginTransaction() { }
-        public static PropertyBinder.BindingFrame[] TraceBindings() { }
+        public static void SetTracingMethod(System.Action<string> tracer) { }
     }
     public sealed class Binder<TContext>
         where TContext :  class
@@ -20,7 +21,6 @@ namespace PropertyBinder
         public PropertyBinder.Binder<TNewContext> Clone<TNewContext>()
             where TNewContext :  class, TContext { }
         public PropertyBinder.Binder<TContext> Clone() { }
-        public static PropertyBinder.BindingFrame[] TraceBindings() { }
     }
     public class static BinderExtensions
     {

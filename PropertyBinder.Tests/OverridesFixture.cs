@@ -125,5 +125,32 @@ namespace PropertyBinder.Tests
                 _stub.String.ShouldBe("a");
             }
         }
+
+        [Test]
+        public void ShouldOverrideMultipleRules()
+        {
+            _binder.Bind(x => x.Int.ToString()).To(x => x.String);
+            _binder.Bind(x => x.Flag.ToString()).To(x => x.String2);
+            _binder.Bind(x => x.Int.ToString() + "2").To(x => x.String);
+            _binder.Bind(x => x.Flag.ToString() + "2").To(x => x.String2);
+
+            _stub = new UniversalStub();
+            using (_binder.Attach(_stub))
+            {
+                _stub.String.ShouldBe("02");
+                _stub.String2.ShouldBe("False2");
+                using (_stub.VerifyChangedOnce("String"))
+                {
+                    _stub.Int = 1;
+                }
+                _stub.String.ShouldBe("12");
+
+                using (_stub.VerifyChangedOnce("String2"))
+                {
+                    _stub.Flag = true;
+                }
+                _stub.String2.ShouldBe("True2");
+            }
+        }
     }
 }

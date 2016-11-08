@@ -31,7 +31,7 @@ namespace PropertyBinder
         public static IConditionalRuleBuilderPhase1<T, TContext> BindIf<T, TContext>(this PropertyBinder<TContext> binder, Expression<Func<TContext, bool>> conditionalExpression, Expression<Func<TContext, T>> targetExpression)
             where TContext : class
         {
-            return new ConditionalRuleBuilder<T, TContext>(binder.Binder).ElseIf(conditionalExpression, targetExpression);
+            return new ConditionalRuleBuilder<T, TContext>(binder.Binder, conditionalExpression, targetExpression);
         }
 
         public static PropertyRuleBuilder<T, TContext> PropagateNullValues<T, TContext>(this PropertyRuleBuilder<T, TContext> ruleBuilder)
