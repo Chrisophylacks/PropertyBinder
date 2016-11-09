@@ -39,18 +39,18 @@ namespace PropertyBinder
         {
             _binder = binder;
             _contextParameter = Expression.Parameter(typeof (TContext));
-            _clauses.Add(Tuple.Create(conditionalExpression.GetBodyWithReplacedParameter(_contextParameter), targetExpression.GetBodyWithReplacedParameter(_contextParameter), new DebugContextBuilder(2, targetExpression, " (branch 0)")));
+            _clauses.Add(Tuple.Create(conditionalExpression.GetBodyWithReplacedParameter(_contextParameter), targetExpression.GetBodyWithReplacedParameter(_contextParameter), new DebugContextBuilder(targetExpression.Body, " (branch 0)")));
         }
 
         public IConditionalRuleBuilderPhase1<T, TContext> ElseIf(Expression<Func<TContext, bool>> conditionalExpression, Expression<Func<TContext, T>> targetExpression)
         {
-            _clauses.Add(Tuple.Create(conditionalExpression.GetBodyWithReplacedParameter(_contextParameter), targetExpression.GetBodyWithReplacedParameter(_contextParameter), new DebugContextBuilder(1, targetExpression, string.Format(" (branch {0})", _clauses.Count))));
+            _clauses.Add(Tuple.Create(conditionalExpression.GetBodyWithReplacedParameter(_contextParameter), targetExpression.GetBodyWithReplacedParameter(_contextParameter), new DebugContextBuilder(targetExpression.Body, string.Format(" (branch {0})", _clauses.Count))));
             return this;
         }
 
         public IConditionalRuleBuilderPhase2<T, TContext> Else(Expression<Func<TContext, T>> targetExpression)
         {
-            _clauses.Add(Tuple.Create((Expression)null, targetExpression.GetBodyWithReplacedParameter(_contextParameter), new DebugContextBuilder(1, targetExpression, string.Format(" (branch {0})", _clauses.Count))));
+            _clauses.Add(Tuple.Create((Expression)null, targetExpression.GetBodyWithReplacedParameter(_contextParameter), new DebugContextBuilder(targetExpression.Body, string.Format(" (branch {0})", _clauses.Count))));
             return this;
         }
 

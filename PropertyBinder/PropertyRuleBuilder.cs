@@ -24,7 +24,7 @@ namespace PropertyBinder
         {
             _binder = binder;
             _sourceExpression = sourceExpression;
-            _debugContext = new DebugContextBuilder(2, sourceExpression, null);
+            _debugContext = new DebugContextBuilder(sourceExpression.Body, null);
             _dependencies.Add(_sourceExpression.Body);
         }
 

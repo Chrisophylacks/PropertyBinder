@@ -49,7 +49,6 @@
     <Compile Include="Decompiler\Operation.cs" />
     <Compile Include="Diagnostics\DebugContextBuilder.cs" />
     <Compile Include="Engine\BindableMember.cs" />
-    <Compile Include="Engine\BindingTrigger.cs" />
     <Compile Include="Engine\BindingExecutor.cs" />
     <Compile Include="Engine\CollectionBindingNode.cs" />
     <Compile Include="Engine\CollectionWatcher.cs" />

@@ -20,7 +20,7 @@ namespace PropertyBinder
 
         internal CommandRuleBinder(Binder<TContext> binder, Action<TContext> executeAction, Expression<Func<TContext, bool>> canExecuteExpression)
         {
-            _debugContext = new DebugContextBuilder(2, canExecuteExpression, null);
+            _debugContext = new DebugContextBuilder(canExecuteExpression.Body, null);
             _binder = binder;
             _executeAction = executeAction;
             _canExecuteExpression = canExecuteExpression;

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using PropertyBinder.Diagnostics;
@@ -157,5 +158,7 @@ namespace PropertyBinder
         {
             BindingExecutor.SetTracingMethod(tracer);
         }
+
+        public static bool DebugMode { get; set; } = Debugger.IsAttached;
     }
 }

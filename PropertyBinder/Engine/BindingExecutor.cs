@@ -10,8 +10,6 @@ namespace PropertyBinder.Engine
         [ThreadStatic]
         private static BindingExecutor _instance;
 
-        private static bool _useVirtualStack;
-
         private static Action<string> _tracer;
 
         private static BindingExecutor Instance
@@ -66,7 +64,6 @@ namespace PropertyBinder.Engine
 
         private BindingExecutor()
         {
-            _useVirtualStack = Debugger.IsAttached;
         }
 
         private readonly Queue<ScheduledBinding> _scheduledBindings = new Queue<ScheduledBinding>();
@@ -97,7 +94,7 @@ namespace PropertyBinder.Engine
                         _executingBinding = _scheduledBindings.Dequeue();
                         _executingBinding.Binding.IsScheduled = false;
                         _tracer?.Invoke(string.Format("Executing binding {0}", _executingBinding.Binding.DebugContext.Description));
-                        if (_useVirtualStack)
+                        if (Binder.DebugMode)
                         {
                             ExecuteWithVirtualStack();
                         }
