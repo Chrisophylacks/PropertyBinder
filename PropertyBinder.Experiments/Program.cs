@@ -13,8 +13,8 @@ namespace PropertyBinder.Experiments
     {
         static void Main(string[] args)
         {
-            //DebugTest();
-            PerformanceTest();
+            DebugTest();
+            //PerformanceTest();
         }
 
         private sealed class BindingAction<T>

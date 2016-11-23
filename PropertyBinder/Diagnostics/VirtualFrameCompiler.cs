@@ -13,7 +13,7 @@ namespace PropertyBinder.Diagnostics
     {
         private static readonly AssemblyBuilder Assembly;
         private static readonly ModuleBuilder Module;
-        private static long _globalIndex;
+        private static readonly HashSet<string> ClassNames = new HashSet<string>();
 
         static VirtualFrameCompiler()
         {
@@ -27,7 +27,14 @@ namespace PropertyBinder.Diagnostics
             lock (Module)
             {
                 const string methodName = " ";
-                var type = Module.DefineType(string.Format(" {0}\0{1}", description, _globalIndex++), TypeAttributes.Class | TypeAttributes.Public);
+                var className = description;
+                if (ClassNames.Contains(className))
+                {
+                    className += " /" + ClassNames.Count;
+                }
+                ClassNames.Add(className);
+
+                var type = Module.DefineType(className, TypeAttributes.Class | TypeAttributes.Public);
                 var method = type.DefineMethod(methodName, MethodAttributes.Public | MethodAttributes.Static, typeof(void), new[] { typeof(Binding[]), typeof(int) });
                 method.SetImplementationFlags(MethodImplAttributes.NoOptimization);
 
