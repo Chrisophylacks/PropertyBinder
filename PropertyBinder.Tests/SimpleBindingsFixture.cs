@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using NUnit.Framework;
 using Shouldly;
 
@@ -348,6 +349,38 @@ namespace PropertyBinder.Tests
                 _stub.String = "b";
                 lastStringValue.ShouldBe("b");
                 _stub.StringField.ShouldBe("b");
+            }
+        }
+
+        [Test]
+        public void ShouldCoerceNullables()
+        {
+            _binder.Bind(x => x.Int).To(x => x.NullableInt);
+            _stub.NullableInt.ShouldBe(null);
+
+            _stub.Int = 0;
+            using (_binder.Attach((_stub)))
+            {
+                _stub.NullableInt.ShouldBe(0);
+
+                _stub.Int = 1;
+                _stub.NullableInt.ShouldBe(1);
+            }
+        }
+
+        [Test]
+        public void ShouldCoerceClasses()
+        {
+            var stub = new UniversalStubEx();
+            var binder = new Binder<UniversalStubEx>();
+            binder.Bind(x => x.NestedEx).To(x => x.Nested);
+
+            using (binder.Attach(stub))
+            {
+                stub.Nested.ShouldBe(null);
+
+                stub.NestedEx = new UniversalStubEx();
+                stub.Nested.ShouldBe(stub.NestedEx);
             }
         }
     }

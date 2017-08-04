@@ -28,7 +28,13 @@ namespace PropertyBinder
             _dependencies.Add(_sourceExpression.Body);
         }
 
+        // TODO: remove this method completely, it doesn't guarantee type safety at compile time. Unfortunately, that would be a breaking change...
         public void To(Expression<Func<TContext, T>> targetExpression)
+        {
+            SetTarget(targetExpression);
+        }
+
+        internal void SetTarget<TTarget>(Expression<Func<TContext, TTarget>> targetExpression)
         {
             var contextParameter = _sourceExpression.Parameters[0];
 
@@ -38,9 +44,15 @@ namespace PropertyBinder
                 source = new NullPropagationVisitor(_sourceExpression.Parameters[0]).Visit(source);
             }
 
+            var target = targetExpression.GetBodyWithReplacedParameter(contextParameter);
+            if (!target.Type.IsAssignableFrom(source.Type) || source.Type.IsValueType && Nullable.GetUnderlyingType(target.Type) == source.Type)
+            {
+                source = Expression.Convert(source, target.Type);
+            }
+
             var assignment = Expression.Lambda<Action<TContext>>(
                 Expression.Assign(
-                    targetExpression.GetBodyWithReplacedParameter(contextParameter),
+                    target,
                     source),
                 contextParameter);
 
@@ -118,7 +130,6 @@ namespace PropertyBinder
 
         private void AddRule(Action<TContext> action, string key)
         {
-            var description = string.Format("{0} to {1}.{2}", _sourceExpression.Body, typeof(TContext).Name, key ?? "SomeAction");
             _binder.AddRule(_debugAction == null ? action : _debugAction + action, key, _debugContext.CreateContext(typeof(TContext).Name, key), _runOnAttach, _canOverride, _dependencies);
         }
     }

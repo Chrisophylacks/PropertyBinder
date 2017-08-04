@@ -49,5 +49,19 @@ namespace PropertyBinder
             ruleBuilder.SetPropagateNullValues(true);
             return ruleBuilder;
         }
+
+        public static void To<T, TContext, TTarget>(this PropertyRuleBuilder<T, TContext> ruleBuilder, Expression<Func<TContext, TTarget>> targetExpression)
+            where TContext : class
+            where T : TTarget
+        {
+            ruleBuilder.SetTarget(targetExpression);
+        }
+
+        public static void To<T, TContext>(this PropertyRuleBuilder<T, TContext> ruleBuilder, Expression<Func<TContext, T?>> targetExpression)
+            where T : struct
+            where TContext : class
+        {
+            ruleBuilder.SetTarget(targetExpression);
+        }
     }
 }

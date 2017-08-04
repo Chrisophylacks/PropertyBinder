@@ -96,6 +96,12 @@ namespace PropertyBinder
         public static PropertyBinder.PropertyRuleBuilder<System.Nullable<T>, TContext> PropagateNullValues<T, TContext>(this PropertyBinder.PropertyRuleBuilder<System.Nullable<T>, TContext> ruleBuilder)
             where T :  struct
             where TContext :  class { }
+        public static void To<T, TContext, TTarget>(this PropertyBinder.PropertyRuleBuilder<T, TContext> ruleBuilder, System.Linq.Expressions.Expression<System.Func<TContext, TTarget>> targetExpression)
+            where T : TTarget
+            where TContext :  class { }
+        public static void To<T, TContext>(this PropertyBinder.PropertyRuleBuilder<T, TContext> ruleBuilder, System.Linq.Expressions.Expression<System.Func<TContext, System.Nullable<T>>> targetExpression)
+            where T :  struct
+            where TContext :  class { }
         [System.ObsoleteAttribute()]
         public static void Unbind<T, TContext>(this PropertyBinder.PropertyBinder<TContext> binder, System.Linq.Expressions.Expression<System.Func<TContext, T>> targetExpression)
         

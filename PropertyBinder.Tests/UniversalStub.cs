@@ -22,6 +22,10 @@ namespace PropertyBinder.Tests
 
         public int? NullableInt { get; set; }
 
+        public decimal Decimal { get; set; }
+
+        public double Double { get; set; }
+
         public bool Flag { get; set; }
 
         public string String { get; set; }
