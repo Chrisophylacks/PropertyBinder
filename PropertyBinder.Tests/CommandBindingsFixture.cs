@@ -10,7 +10,7 @@ namespace PropertyBinder.Tests
         public void ShouldBindCommand()
         {
             int canExecuteCalls = 0;
-            _binder.BindCommand(x => x.Int++, x => x.Flag).To(x => x.Command);
+            _binder.BindCommand(x => x.Int++, x => x.Flag && x.String != null).To(x => x.Command);
 
             using (_binder.Attach(_stub))
             {
@@ -19,12 +19,39 @@ namespace PropertyBinder.Tests
 
                 _stub.Command.CanExecuteChanged += (s, e) => { ++canExecuteCalls; };
                 _stub.Flag = true;
+                canExecuteCalls.ShouldBe(0);
+                _stub.Command.CanExecute(null).ShouldBe(false);
+                _stub.String = "a";
                 canExecuteCalls.ShouldBe(1);
                 _stub.Command.CanExecute(null).ShouldBe(true);
 
                 _stub.Int.ShouldBe(0);
                 _stub.Command.Execute(null);
                 _stub.Int.ShouldBe(1);
+            }
+        }
+
+        [Test]
+        public void ShouldBindCommandWithParameter()
+        {
+            int canExecuteCalls = 0;
+            _binder.BindCommand((x, par) => x.Int += (int)par, (x, par) => x.Flag && (int)par > 0).To(x => x.Command);
+
+            using (_binder.Attach(_stub))
+            {
+                _stub.Command.ShouldNotBeNull();
+                _stub.Command.CanExecute(0).ShouldBe(false);
+                _stub.Command.CanExecute(2).ShouldBe(false);
+
+                _stub.Command.CanExecuteChanged += (s, e) => { ++canExecuteCalls; };
+                _stub.Flag = true;
+                canExecuteCalls.ShouldBe(1);
+                _stub.Command.CanExecute(0).ShouldBe(false);
+                _stub.Command.CanExecute(2).ShouldBe(true);
+
+                _stub.Int.ShouldBe(0);
+                _stub.Command.Execute(2);
+                _stub.Int.ShouldBe(2);
             }
         }
 

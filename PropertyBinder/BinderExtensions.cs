@@ -17,7 +17,19 @@ namespace PropertyBinder
         public static CommandRuleBinder<TContext> BindCommand<TContext>(this Binder<TContext> binder, Action<TContext> executeAction, Expression<Func<TContext, bool>> canExecuteExpression)
             where TContext : class
         {
-            return new CommandRuleBinder<TContext>(binder, executeAction, canExecuteExpression);
+            var parameter = Expression.Parameter(typeof (object), "parameter");
+            var canExecuteWithParameter = Expression.Lambda<Func<TContext, object, bool>>(
+                canExecuteExpression.Body,
+                canExecuteExpression.Parameters[0],
+                parameter);
+
+            return new CommandRuleBinder<TContext>(binder, (ctx, _) => executeAction(ctx), canExecuteWithParameter, false);
+        }
+
+        public static CommandRuleBinder<TContext> BindCommand<TContext>(this Binder<TContext> binder, Action<TContext, object> executeAction, Expression<Func<TContext, object, bool>> canExecuteExpression)
+            where TContext : class
+        {
+            return new CommandRuleBinder<TContext>(binder, executeAction, canExecuteExpression, true);
         }
 
         public static void Unbind<T, TContext>(this Binder<TContext> binder, Expression<Func<TContext, T>> targetExpression)

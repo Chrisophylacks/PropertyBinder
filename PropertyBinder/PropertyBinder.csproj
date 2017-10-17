@@ -64,7 +64,6 @@
     <Compile Include="Helpers\ReferenceEqualityComparer.cs" />
     <Compile Include="Helpers\TypeExtensions.cs" />
     <Compile Include="Helpers\UniqueActionCollection.cs" />
-    <Compile Include="PropertyBinder.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PropertyBinderExtensions.cs" />
     <Compile Include="PropertyRuleBuilder.cs" />
