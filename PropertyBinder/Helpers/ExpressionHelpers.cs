@@ -45,6 +45,16 @@ namespace PropertyBinder.Helpers
                     continue;
                 }
 
+                if (expr.NodeType == ExpressionType.Convert || expr.NodeType == ExpressionType.ConvertChecked)
+                {
+                    var unary = expr as UnaryExpression;
+                    if (unary != null)
+                    {
+                        expr = unary.Operand;
+                        continue;
+                    }
+                }
+
                 // attempt to resolve path from indexer
                 var callExpr = expr as MethodCallExpression;
                 string index;

@@ -11,6 +11,8 @@ namespace PropertyBinder.Diagnostics
 {
     internal static class VirtualFrameCompiler
     {
+        private const string ModuleName = "PropertyBinder.VirtualFrames.dll";
+
         private static readonly AssemblyBuilder Assembly;
         private static readonly ModuleBuilder Module;
         private static readonly HashSet<string> ClassNames = new HashSet<string>();
@@ -19,7 +21,12 @@ namespace PropertyBinder.Diagnostics
         {
             var assemblyName = new AssemblyName("BINDING ");
             Assembly = AppDomain.CurrentDomain.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndSave);
-            Module = Assembly.DefineDynamicModule("PropertyBinder.VirtualFrames.dll", true);
+            Module = Assembly.DefineDynamicModule(ModuleName, true);
+        }
+
+        internal static void TakeSnapshot()
+        {
+            Assembly.Save(ModuleName);
         }
 
         public static Action<Binding[], int> CreateMethodFrame(string description, StackFrame frame)
@@ -43,7 +50,7 @@ namespace PropertyBinder.Diagnostics
                 var binding = il.DeclareLocal(typeof(Binding));
                 il.Emit(OpCodes.Ldarg_0);
                 il.Emit(OpCodes.Ldarg_1);
-                il.Emit(OpCodes.Ldelem_I4);
+                il.Emit(OpCodes.Ldelem_Ref);
                 il.Emit(OpCodes.Stloc_S, binding);
 
                 var fileName = frame?.GetFileName();
@@ -58,7 +65,8 @@ namespace PropertyBinder.Diagnostics
 
                 il.Emit(OpCodes.Ldarg_1);
                 il.Emit(OpCodes.Ldarg_0);
-                il.Emit(OpCodes.Call, typeof(Binding[]).GetProperty("Length").GetGetMethod());
+                il.Emit(OpCodes.Ldlen);
+                il.Emit(OpCodes.Conv_I4);
                 il.Emit(OpCodes.Ldc_I4_1);
                 il.Emit(OpCodes.Sub);
 
@@ -68,7 +76,7 @@ namespace PropertyBinder.Diagnostics
                 il.Emit(OpCodes.Ldarg_1);
                 il.Emit(OpCodes.Ldc_I4_1);
                 il.Emit(OpCodes.Add);
-                il.Emit(OpCodes.Ldelem_I4);
+                il.Emit(OpCodes.Ldelem_Ref);
                 il.Emit(OpCodes.Ldfld, typeof(Binding).GetField("DebugContext"));
                 il.Emit(OpCodes.Callvirt, typeof(DebugContext).GetProperty("VirtualFrame").GetGetMethod());
                 il.Emit(OpCodes.Ldarg_0);
@@ -90,6 +98,18 @@ namespace PropertyBinder.Diagnostics
                 var actualType = type.CreateType();
                 return (Action<Binding[], int>)actualType.GetMethod(methodName).CreateDelegate(typeof(Action<Binding[], int>));
             }
+        }
+
+        [MethodImpl(MethodImplOptions.NoOptimization)]
+        private static void SampleFrame(Binding[] bindings, int index)
+        {
+            var binding = bindings[index];
+            if (index < bindings.Length + 1)
+            {
+                bindings[index + 1].DebugContext.VirtualFrame(bindings, index + 1);
+                return;
+            }
+            binding.Execute();
         }
     }
 }

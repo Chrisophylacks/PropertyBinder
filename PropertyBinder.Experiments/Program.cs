@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
@@ -6,6 +7,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using PropertyBinder.Diagnostics;
 
 namespace PropertyBinder.Experiments
 {
@@ -13,8 +15,10 @@ namespace PropertyBinder.Experiments
     {
         static void Main(string[] args)
         {
-            DebugTest();
+            //DebugTest();
+            DebugStackFrameTest();
             //PerformanceTest();
+            //DictionaryPerfTest();
         }
 
         private sealed class BindingAction<T>
@@ -133,6 +137,21 @@ namespace PropertyBinder.Experiments
             }
         }
 
+        private static void DebugStackFrameTest()
+        {
+            var binder = new Binder<SourceModel>();
+            binder.Bind(x => x.Value1).DoNotRunOnAttach().To(x =>
+            {
+                VirtualFrameCompiler.TakeSnapshot();
+            });
+
+            var model = new SourceModel();
+            using (binder.Attach(model))
+            {
+                model.Value1 = 1;
+            }
+        }
+
         private static void PerformanceTest()
         {
             var consumer = new Consumer();
@@ -186,6 +205,228 @@ namespace PropertyBinder.Experiments
             // expected result: 400ms on average workstation
             Console.WriteLine(sw.ElapsedMilliseconds);
             Console.ReadLine();
+        }
+
+        private static void DictionaryPerfTest()
+        {
+            var sizes = new[] { 1, 4, 8 };
+            var comparer = StringComparer.InvariantCultureIgnoreCase;
+            foreach (var sz in sizes)
+            {
+                Console.WriteLine("Dictionary/{0}", sz);
+                TestTryGetValueCollection<Dictionary<string, object>>(sz, 100000, comparer);
+            }
+
+            foreach (var sz in sizes)
+            {
+                Console.WriteLine("SortedDictionary/{0}", sz);
+                TestTryGetValueCollection<SortedDictionary<string, object>>(sz, 100000, comparer);
+            }
+
+            foreach (var sz in sizes)
+            {
+                Console.WriteLine("SortedList/{0}", sz);
+                TestTryGetValueCollection<SortedList<string, object>>(sz, 100000, comparer);
+            }
+
+            foreach (var sz in sizes)
+            {
+                Console.WriteLine("ListDictionary/{0}", sz);
+                TestTryGetValueCollection<ListDictionary<string, object>>(sz, 100000, comparer);
+            }
+
+            Console.ReadLine();
+        }
+
+        private static void TestTryGetValueCollection<T>(int size, int rounds, IEqualityComparer<string> comparer)
+            where T : IDictionary<string, object>, new()
+        {
+            var keys = Enumerable.Range(0, size).Select(x => string.Format("LongKey_{0}_{1}", x % 2, x)).ToArray();
+
+            T collection = new T();
+            var sw = new Stopwatch();
+            sw.Start();
+
+            for (int r = 0; r < rounds; ++r)
+            {
+                collection = new T();
+                for (int i = 0; i < size; ++i)
+                {
+                    collection.Add(keys[i], keys[i]);
+                }
+            }
+
+            sw.Stop();
+            Console.WriteLine("Populate: " + sw.ElapsedMilliseconds);
+
+            sw.Reset();
+            sw.Start();
+
+            for (int r = 0; r < rounds; ++r)
+            {
+                object value;
+                for (int i = 0; i < size; ++i)
+                {
+                    collection.TryGetValue(keys[i], out value);
+                }
+            }
+
+
+            sw.Stop();
+            Console.WriteLine("Retrieve: " + sw.ElapsedMilliseconds);
+        }
+
+    }
+
+    public sealed class ListDictionary<TKey, TValue> : IDictionary<TKey, TValue>
+    {
+        private KeyValuePair<TKey, TValue>[] data;
+        private readonly IEqualityComparer<TKey> keyComparer;
+        private int size;
+
+        public ListDictionary()
+            : this(4, EqualityComparer<TKey>.Default)
+        {
+        }
+
+        public ListDictionary(int capacity, IEqualityComparer<TKey> comparer)
+        {
+            keyComparer = comparer;
+            data = new KeyValuePair<TKey, TValue>[capacity];
+        }
+
+        public bool ContainsKey(TKey key)
+        {
+            for (int i = 0; i < size; ++i)
+            {
+                if (keyComparer.Equals(data[i].Key, key))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public void Add(TKey key, TValue value)
+        {
+            if (size >= data.Length)
+            {
+                Array.Resize(ref data, data.Length * 2);
+            }
+
+            data[size++] = new KeyValuePair<TKey, TValue>(key, value);
+        }
+
+        public bool Remove(TKey key)
+        {
+            for (int i = 0; i < size;++i)
+            {
+                if (keyComparer.Equals(data[i].Key, key))
+                {
+                    data[i] = data[--size];
+                    data[size] = default (KeyValuePair<TKey, TValue>);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public bool TryGetValue(TKey key, out TValue value)
+        {
+            for (int i = 0; i < size; ++i)
+            {
+                if (keyComparer.Equals(data[i].Key, key))
+                {
+                    value = data[i].Value;
+                    return true;
+                }
+            }
+
+            value = default(TValue);
+            return false;
+        }
+
+        public TValue this[TKey key]
+        {
+            get
+            {
+                TValue res;
+                if (!TryGetValue(key, out res))
+                {
+                    throw new KeyNotFoundException();
+                }
+                return res;
+            }
+            set
+            {
+                for (int i = 0; i < size; ++i)
+                {
+                    if (keyComparer.Equals(data[i].Key, key))
+                    {
+                        data[i] = new KeyValuePair<TKey, TValue>(key, value);
+                        return;
+                    }
+                }
+                Add(key, value);
+            }
+        }
+
+
+        public ICollection<TKey> Keys
+        {
+            get
+            {
+               throw new NotImplementedException(); 
+            }
+        }
+
+        public ICollection<TValue> Values
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        void ICollection<KeyValuePair<TKey, TValue>>.Add(KeyValuePair<TKey, TValue> item)
+        {
+            Add(item.Key, item.Value);
+        }
+
+        public void Clear()
+        {
+            Array.Clear(data, 0, size);
+            size = 0;
+        }
+
+        bool ICollection<KeyValuePair<TKey, TValue>>.Contains(KeyValuePair<TKey, TValue> item)
+        {
+            return ContainsKey(item.Key);
+        }
+
+        public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
+        {
+            Array.Copy(data, 0, array, arrayIndex, size);
+        }
+
+        bool ICollection<KeyValuePair<TKey, TValue>>.Remove(KeyValuePair<TKey, TValue> item)
+        {
+            return Remove(item.Key);
+        }
+
+        public int Count => size;
+
+        public bool IsReadOnly => false;
+
+        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
+        {
+            return data.Take(size).GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
         }
     }
 }

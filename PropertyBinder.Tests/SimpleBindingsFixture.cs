@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq.Expressions;
 using NUnit.Framework;
 using Shouldly;
 
@@ -381,6 +380,77 @@ namespace PropertyBinder.Tests
 
                 stub.NestedEx = new UniversalStubEx();
                 stub.Nested.ShouldBe(stub.NestedEx);
+            }
+        }
+
+        [Test]
+        public void ShouldDowncastClasses()
+        {
+            var binder = new Binder<UniversalStub>();
+            binder.Bind(x => ((UniversalStubEx)x.Nested).String3).To(x => x.String);
+
+            var stub = new UniversalStub();
+            var stubEx = new UniversalStubEx();
+            stub.Nested = stubEx;
+
+            using (binder.Attach(stub))
+            {
+                stub.String.ShouldBe(null);
+
+                stubEx.String3 = "a";
+                stub.String.ShouldBe("a");
+
+                stub.Nested = new UniversalStubEx { String3 = "b" };
+                stub.String.ShouldBe("b");
+            }
+        }
+
+        [Test]
+        public void ShouldBindNestedWhenNoPropertyChangedNotificationsInTheMiddle()
+        {
+            var binder = new Binder<ValueContainerClassNotify<ValueContainerClass<UniversalStub>>>();
+            binder.Bind(x => x.Value.Value.String).To(x => x.Value.Value.String2);
+
+            var stub = new ValueContainerClassNotify<ValueContainerClass<UniversalStub>>();
+            stub.Value = new ValueContainerClass<UniversalStub>();
+            stub.Value.Value = new UniversalStub();
+
+            using (binder.Attach(stub))
+            {
+                stub.Value.Value.String2.ShouldBe(null);
+
+                stub.Value.Value.String = "a";
+                stub.Value.Value.String2.ShouldBe("a");
+
+                stub.Value = new ValueContainerClass<UniversalStub> { Value = new UniversalStub { String = "b" } };
+                stub.Value.Value.String2.ShouldBe("b");
+
+                stub.Value.Value.String = "c";
+                stub.Value.Value.String2.ShouldBe("c");
+            }
+        }
+
+        [Test]
+        public void ShouldBindNestedWhenStructInTheMiddle()
+        {
+            var binder = new Binder<ValueContainerClassNotify<ValueContainerStruct<UniversalStub>>>();
+            binder.Bind(x => x.Value.Value.String).To(x => x.Value.Value.String2);
+
+            var stub = new ValueContainerClassNotify<ValueContainerStruct<UniversalStub>>();
+            stub.Value = new ValueContainerStruct<UniversalStub>(new UniversalStub());
+
+            using (binder.Attach(stub))
+            {
+                stub.Value.Value.String2.ShouldBe(null);
+
+                stub.Value.Value.String = "a";
+                stub.Value.Value.String2.ShouldBe("a");
+
+                stub.Value = new ValueContainerStruct<UniversalStub>(new UniversalStub { String = "b" });
+                stub.Value.Value.String2.ShouldBe("b");
+
+                stub.Value.Value.String = "c";
+                stub.Value.Value.String2.ShouldBe("c");
             }
         }
     }
