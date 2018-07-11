@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace PropertyBinder.Helpers
 {
@@ -15,7 +16,7 @@ namespace PropertyBinder.Helpers
                     return collectionType.GetElementType();
                 }
 
-                foreach (var ifc in collectionType.GetInterfaces())
+                foreach (var ifc in collectionType.GetInterfaces().Concat(new[] { collectionType }))
                 {
                     if (ifc.IsGenericType && ifc.GetGenericTypeDefinition() == typeof(IEnumerable<>))
                     {

@@ -18,6 +18,7 @@ namespace PropertyBinder
         private readonly List<Expression> _dependencies = new List<Expression>();
         private string _key;
         private readonly DebugContextBuilder _debugContext;
+        private CommandCanExecuteCheckMode _canExecuteCheckMode;
 
         internal CommandRuleBinder(Binder<TContext> binder, Action<TContext, object> executeAction, Expression<Func<TContext, object, bool>> canExecuteExpression, bool hasParameter)
         {
@@ -26,6 +27,7 @@ namespace PropertyBinder
             _executeAction = executeAction;
             _canExecuteExpression = canExecuteExpression;
             _hasParameter = hasParameter;
+            _canExecuteCheckMode = Binder.DefaultCommandCanExecuteCheckMode;
         }
 
         public CommandRuleBinder<TContext> OverrideKey(string bindingRuleKey)
@@ -37,6 +39,12 @@ namespace PropertyBinder
         public CommandRuleBinder<TContext> WithDependency<TDependency>(Expression<Func<TContext, TDependency>> dependencyExpression)
         {
             _dependencies.Add(dependencyExpression.Body);
+            return this;
+        }
+
+        public CommandRuleBinder<TContext> WithCanExecuteCheckMode(CommandCanExecuteCheckMode mode)
+        {
+            _canExecuteCheckMode = mode;
             return this;
         }
 
@@ -57,7 +65,7 @@ namespace PropertyBinder
             var key = _key ?? destinationExpression.GetTargetKey();
             _dependencies.Add(_canExecuteExpression);
 
-            _binder.AddRule(ctx => assignCommand(ctx, new ActionCommand(ctx, _executeAction, canExecute, _hasParameter)), key, _debugContext.CreateContext(typeof(TContext).Name, key), true, true, Enumerable.Empty<LambdaExpression>());
+            _binder.AddRule(ctx => assignCommand(ctx, new ActionCommand(ctx, _executeAction, canExecute, _hasParameter, _canExecuteCheckMode)), key, _debugContext.CreateContext(typeof(TContext).Name, key), true, true, Enumerable.Empty<LambdaExpression>());
             _binder.AddRule(ctx => UpdateCanExecuteOnCommand(getCommand(ctx)), key, _debugContext.CreateContext(typeof(TContext).Name, key + "_CanExecute"), true, false, _dependencies);
         }
 
@@ -67,14 +75,16 @@ namespace PropertyBinder
             private readonly Action<TContext, object> _action;
             private readonly Func<TContext, object, bool> _getCanExecute;
             private readonly bool _hasParameter;
+            private readonly CommandCanExecuteCheckMode _canExecuteCheckMode;
             private bool _canExecute;
 
-            public ActionCommand(TContext context, Action<TContext, object> action, Func<TContext, object, bool> getCanExecute, bool hasParameter)
+            public ActionCommand(TContext context, Action<TContext, object> action, Func<TContext, object, bool> getCanExecute, bool hasParameter, CommandCanExecuteCheckMode canExecuteCheckMode)
             {
                 _context = context;
                 _action = action;
                 _getCanExecute = getCanExecute;
                 _hasParameter = hasParameter;
+                _canExecuteCheckMode = canExecuteCheckMode;
             }
 
             public bool CanExecute(object parameter)
@@ -84,6 +94,17 @@ namespace PropertyBinder
 
             public void Execute(object parameter)
             {
+                if (_canExecuteCheckMode != CommandCanExecuteCheckMode.DoNotCheck && !CanExecute(parameter))
+                {
+                    switch (_canExecuteCheckMode)
+                    {
+                        case CommandCanExecuteCheckMode.DoNotExecute:
+                            return;
+
+                        case CommandCanExecuteCheckMode.ThrowException:
+                            throw new InvalidOperationException("Command cannot be executed");
+                    }
+                }
                 _action(_context, parameter);
             }
 
@@ -124,5 +145,12 @@ namespace PropertyBinder
                 actionCommand.UpdateCanExecute();
             }
         }
+    }
+
+    public enum CommandCanExecuteCheckMode
+    {
+        DoNotCheck,
+        DoNotExecute,
+        ThrowException
     }
 }

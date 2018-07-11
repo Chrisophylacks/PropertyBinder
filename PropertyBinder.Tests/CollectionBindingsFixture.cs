@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using NUnit.Framework;
 using Shouldly;
 
@@ -165,6 +166,41 @@ namespace PropertyBinder.Tests
             using (_binder.Attach(_stub))
             {
                 item1.SubscriptionsCount.ShouldBe(0);
+            }
+        }
+
+        [Test]
+        public void ShouldWorkOnNonObservableCollection()
+        {
+            _binder.Bind(x => string.Join(";", x.EnumerableCollection.Select(s => s.String))).To(x => x.String);
+            var stub1 = new UniversalStub { String = "1" };
+            var stub2 = new UniversalStub { String = "2" };
+            _stub.EnumerableCollection = new[] { stub1, stub2 };
+
+            using (_binder.Attach(_stub))
+            {
+                _stub.String.ShouldBe("1;2");
+                stub1.String = "a";
+                _stub.String.ShouldBe("a;2");
+            }
+        }
+
+        [Test]
+        public void ShouldWorkOnObservableCollectionDeclaredAsEnumerable()
+        {
+            _binder.Bind(x => string.Join(";", x.EnumerableCollection.Select(s => s.String))).To(x => x.String);
+            var stub1 = new UniversalStub { String = "1" };
+            var stub2 = new UniversalStub { String = "2" };
+            var collection = new ObservableCollection<UniversalStub>(new[] { stub1, stub2 });
+            _stub.EnumerableCollection = collection;
+
+            using (_binder.Attach(_stub))
+            {
+                _stub.String.ShouldBe("1;2");
+                collection.Add(new UniversalStub { String = "3" });
+                _stub.String.ShouldBe("1;2;3");
+                stub1.String = "a";
+                _stub.String.ShouldBe("a;2;3");
             }
         }
     }

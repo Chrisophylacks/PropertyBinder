@@ -160,5 +160,7 @@ namespace PropertyBinder
         }
 
         public static bool DebugMode { get; set; } = Debugger.IsAttached;
+
+        public static CommandCanExecuteCheckMode DefaultCommandCanExecuteCheckMode { get; set; } = CommandCanExecuteCheckMode.DoNotCheck;
     }
 }

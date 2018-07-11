@@ -1,3 +1,4 @@
+using System;
 using NUnit.Framework;
 using Shouldly;
 
@@ -133,6 +134,46 @@ namespace PropertyBinder.Tests
                 _stub.Flag = true;
                 canExecuteCalls.ShouldBe(1);
                 _stub.Command.CanExecute(null).ShouldBe(true);
+            }
+        }
+
+        [Test]
+        public void ShouldExecuteCommandInAppropriateMode()
+        {
+            bool executed = false;
+            _binder.BindCommand(x => { executed = true; }, x => false).WithCanExecuteCheckMode(CommandCanExecuteCheckMode.DoNotCheck).To(x => x.Command);
+
+            using (_binder.Attach(_stub))
+            {
+                _stub.Command.Execute(null);
+                executed.ShouldBe(true);
+            }
+        }
+
+        [Test]
+        public void ShouldNotExecuteCommandInAppropriateMode()
+        {
+            bool executed = false;
+            _binder.BindCommand(x => { executed = true; }, x => false).WithCanExecuteCheckMode(CommandCanExecuteCheckMode.DoNotExecute).To(x => x.Command);
+
+            using (_binder.Attach(_stub))
+            {
+                _stub.Command.Execute(null);
+                executed.ShouldBe(false);
+            }
+        }
+
+        [Test]
+        public void ShouldThrowOnExecuteCommandInAppropriateMode()
+        {
+            bool executed = false;
+            _binder.BindCommand(x => { executed = true; }, x => false).WithCanExecuteCheckMode(CommandCanExecuteCheckMode.ThrowException).To(x => x.Command);
+
+            using (_binder.Attach(_stub))
+            {
+                Action action = () => _stub.Command.Execute(null);
+                action.ShouldThrow<InvalidOperationException>();
+                executed.ShouldBe(false);
             }
         }
 

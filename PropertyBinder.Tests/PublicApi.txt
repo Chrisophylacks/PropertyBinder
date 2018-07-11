@@ -1,4 +1,5 @@
 [assembly: System.Runtime.CompilerServices.InternalsVisibleToAttribute("BINDING ")]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleToAttribute("PropertyBinder.Experiments")]
 [assembly: System.Runtime.CompilerServices.InternalsVisibleToAttribute("PropertyBinder.Tests")]
 [assembly: System.Runtime.InteropServices.ComVisibleAttribute(false)]
 [assembly: System.Runtime.InteropServices.GuidAttribute("f2800cdd-5dd1-4cbf-9808-fc1a00d67c1a")]
@@ -10,6 +11,7 @@ namespace PropertyBinder
     public class static Binder
     {
         public static bool DebugMode { get; set; }
+        public static PropertyBinder.CommandCanExecuteCheckMode DefaultCommandCanExecuteCheckMode { get; set; }
         public static System.IDisposable BeginTransaction() { }
         public static void SetTracingMethod(System.Action<string> tracer) { }
     }
@@ -45,11 +47,18 @@ namespace PropertyBinder
         public object Context { get; }
         public string Key { get; }
     }
+    public enum CommandCanExecuteCheckMode
+    {
+        DoNotCheck = 0,
+        DoNotExecute = 1,
+        ThrowException = 2,
+    }
     public sealed class CommandRuleBinder<TContext>
         where TContext :  class
     {
         public PropertyBinder.CommandRuleBinder<TContext> OverrideKey(string bindingRuleKey) { }
         public void To(System.Linq.Expressions.Expression<System.Func<TContext, System.Windows.Input.ICommand>> destinationExpression) { }
+        public PropertyBinder.CommandRuleBinder<TContext> WithCanExecuteCheckMode(PropertyBinder.CommandCanExecuteCheckMode mode) { }
         public PropertyBinder.CommandRuleBinder<TContext> WithDependency<TDependency>(System.Linq.Expressions.Expression<System.Func<TContext, TDependency>> dependencyExpression) { }
     }
     public interface IConditionalRuleBuilderPhase1<T, TContext> : PropertyBinder.IConditionalRuleBuilderPhase2<T, TContext>

@@ -42,6 +42,8 @@ namespace PropertyBinder.Tests
 
         public ObservableCollection<UniversalStub> Collection { get; set; }
 
+        public IEnumerable<UniversalStub> EnumerableCollection { get; set; }
+
         public ObservableDictionary<string> Dictionary { get; set; }
 
         public int SubscriptionsCount
