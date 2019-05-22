@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using PropertyBinder.Diagnostics;
 using PropertyBinder.Helpers;
 
@@ -13,6 +14,8 @@ namespace PropertyBinder
         IConditionalRuleBuilderPhase2<T, TContext> DoNotRunOnAttach();
         IConditionalRuleBuilderPhase2<T, TContext> DoNotOverride();
         IConditionalRuleBuilderPhase2<T, TContext> OverrideKey(string bindingRuleKey);
+
+        IConditionalRuleBuilderPhase2<T, TContext> Debug(Action<TContext> debugAction);
 
         void To(Expression<Func<TContext, T>> targetExpression);
         void To(Action<TContext, T> action);
@@ -33,7 +36,9 @@ namespace PropertyBinder
         private readonly ParameterExpression _contextParameter;
         private bool _runOnAttach = true;
         private bool _canOverride = true;
+        private bool _hasElseClause = false;
         private string _key;
+        private Action<TContext> _debugAction;
 
         public ConditionalRuleBuilder(Binder<TContext> binder, Expression<Func<TContext, bool>> conditionalExpression, Expression<Func<TContext, T>> targetExpression)
         {
@@ -50,7 +55,12 @@ namespace PropertyBinder
 
         public IConditionalRuleBuilderPhase2<T, TContext> Else(Expression<Func<TContext, T>> targetExpression)
         {
+            if (_hasElseClause)
+            {
+                throw new Exception("Current conditional binding already has an 'Else' clause");
+            }
             _clauses.Add(Tuple.Create((Expression)null, targetExpression.GetBodyWithReplacedParameter(_contextParameter), new DebugContextBuilder(targetExpression.Body, string.Format(" (branch {0})", _clauses.Count))));
+            _hasElseClause = true;
             return this;
         }
 
@@ -60,8 +70,16 @@ namespace PropertyBinder
             return this;
         }
 
+        public IConditionalRuleBuilderPhase2<T, TContext> Debug(Action<TContext> debugAction)
+        {
+            _debugAction = debugAction;
+            return this;
+        }
+
         public void To(Expression<Func<TContext, T>> targetExpression)
         {
+            AddElseClauseIfNecessary();
+
             var targetBody = targetExpression.GetBodyWithReplacedParameter(_contextParameter);
             var key = _key ?? targetExpression.GetTargetKey();
 
@@ -71,7 +89,7 @@ namespace PropertyBinder
             for (int i = 0; i < _clauses.Count; ++i)
             {
                 var sourceExpression = _clauses[i].Item2;
-                if (sourceExpression == null)
+                if (sourceExpression == null && _debugAction == null)
                 {
                     break;
                 }
@@ -83,10 +101,11 @@ namespace PropertyBinder
                         : _clauses[i].Item1;
 
                 var assignmentExpression = Expression.IfThen(
-                    conditionExpression, 
-                    Expression.Assign(
-                        targetBody,
-                        sourceExpression));
+                    conditionExpression,
+                    AddDebugAction(
+                        sourceExpression == null ? null : Expression.Assign(
+                            targetBody,
+                            sourceExpression)));
 
                 var assignment = Expression.Lambda<Action<TContext>>(
                     assignmentExpression,
@@ -104,20 +123,23 @@ namespace PropertyBinder
 
         public void To(Action<TContext, T> action)
         {
+            AddElseClauseIfNecessary();
+
             var actionParameter = Expression.Parameter(typeof(Action<TContext, T>));
 
             for (int i = 0; i < _clauses.Count; ++i)
             {
                 var sourceExpression = _clauses[i].Item2;
-                if (sourceExpression == null)
+                if (sourceExpression == null && _debugAction == null)
                 {
                     break;
                 }
 
-                var innerExpression = Expression.Invoke(
-                    actionParameter,
-                    _contextParameter,
-                    sourceExpression);
+                var innerExpression = AddDebugAction(
+                    sourceExpression == null ? null : Expression.Invoke(
+                        actionParameter,
+                        _contextParameter,
+                        sourceExpression));
 
                 var conditionExpression = _clauses[i].Item1 == null
                     ? Expression.Not(CombineOr(_clauses.Take(i).Select(x => x.Item1))) 
@@ -128,7 +150,10 @@ namespace PropertyBinder
                 var invokeExpression = Expression.IfThen(conditionExpression, innerExpression);
                 var invoke = Expression.Lambda<Action<TContext, Action<TContext, T>>>(invokeExpression, _contextParameter, actionParameter).Compile();
 
-                _binder.AddRule(ctx => invoke(ctx, action), _key, _clauses[i].Item3.CreateContext(typeof(TContext).Name, _key), _runOnAttach, i == 0 && _canOverride, new[] { invokeExpression });
+                _binder.AddRule(ctx =>
+                    {
+                        invoke(ctx, action);
+                    }, _key, _clauses[i].Item3.CreateContext(typeof(TContext).Name, _key), _runOnAttach, i == 0 && _canOverride, new[] { invokeExpression });
             }
         }
 
@@ -147,6 +172,24 @@ namespace PropertyBinder
         private Expression CombineOr(IEnumerable<Expression> expressions)
         {
             return expressions.Aggregate<Expression, Expression>(null, (current, e) => current == null ? e : Expression.OrElse(current, e));
+        }
+
+        private void AddElseClauseIfNecessary()
+        {
+            if (_debugAction != null && !_hasElseClause)
+            {
+                _clauses.Add(Tuple.Create((Expression)null, (Expression)null, new DebugContextBuilder(Expression.Empty(), "(no branch)")));
+                _hasElseClause = true;
+            }
+        }
+
+        private Expression AddDebugAction(Expression expression)
+        {
+            var debugExpression = _debugAction == null ? null : Expression.Invoke(
+                Expression.Constant(_debugAction),
+                _contextParameter);
+
+            return ExpressionHelpers.CombineToBlock(debugExpression, expression);
         }
     }
 }

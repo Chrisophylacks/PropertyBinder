@@ -106,5 +106,21 @@ namespace PropertyBinder.Helpers
         {
             return new ReplaceParameterVisitor(source.Parameters[0], parameter).Visit(source.Body);
         }
+
+        public static Expression CombineToBlock(params Expression[] expressions)
+        {
+            var filteredExpressions = expressions.Where(x => x != null).ToArray();
+            if (filteredExpressions.Length == 0)
+            {
+                return Expression.Empty();
+            }
+
+            if (filteredExpressions.Length == 1)
+            {
+                return filteredExpressions[0];
+            }
+
+            return Expression.Block(filteredExpressions);
+        }
     }
 }
