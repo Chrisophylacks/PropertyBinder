@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Windows.Input;
+using FastExpressionCompiler;
 using PropertyBinder.Diagnostics;
 using PropertyBinder.Helpers;
 
@@ -58,10 +59,10 @@ namespace PropertyBinder
                     destinationExpression.Body,
                     commandParameter),
                 contextParameter,
-                commandParameter).Compile();
+                commandParameter).CompileFast();
 
-            var getCommand = destinationExpression.Compile();
-            var canExecute = _canExecuteExpression.Compile();
+            var getCommand = destinationExpression.CompileFast();
+            var canExecute = _canExecuteExpression.CompileFast();
             var key = _key ?? destinationExpression.GetTargetKey();
             _dependencies.Add(_canExecuteExpression);
 

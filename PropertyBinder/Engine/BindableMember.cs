@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq.Expressions;
 using System.Reflection;
+using FastExpressionCompiler;
 
 namespace PropertyBinder.Engine
 {
@@ -40,7 +41,7 @@ namespace PropertyBinder.Engine
         private static Delegate CreateMemberSelector(Type parentType, MemberInfo member)
         {
             var parameter = Expression.Parameter(parentType);
-            return Expression.Lambda(Expression.MakeMemberAccess(parameter, member), parameter).Compile();
+            return Expression.Lambda(Expression.MakeMemberAccess(parameter, member), parameter).CompileFast();
         }
 
         private static Delegate CreatePropertySelector(Type parentType, PropertyInfo property)
@@ -61,7 +62,7 @@ namespace PropertyBinder.Engine
                     parameter,
                     parentType.GetMethod("get_Item"),
                     Expression.Constant(index)),
-                parameter).Compile();
+                parameter).CompileFast();
         }
     }
 }

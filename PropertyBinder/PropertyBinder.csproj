@@ -48,6 +48,10 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="FastExpressionCompiler, Version=2.0.0.0, Culture=neutral, PublicKeyToken=dfbf2bd50fcf7768">
+      <HintPath>..\packages\FastExpressionCompiler.2.0.0\lib\net45\FastExpressionCompiler.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -91,6 +95,9 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Compiler\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
