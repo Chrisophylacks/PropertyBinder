@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using FastExpressionCompiler;
 using PropertyBinder.Diagnostics;
 using PropertyBinder.Helpers;
 
@@ -109,7 +110,7 @@ namespace PropertyBinder
 
                 var assignment = Expression.Lambda<Action<TContext>>(
                     assignmentExpression,
-                    _contextParameter).Compile();
+                    _contextParameter).CompileFast();
 
                 var dependencies = new List<Expression> { conditionExpression, sourceExpression };
                 if (targetParent != targetParameter)
@@ -148,7 +149,7 @@ namespace PropertyBinder
                         : _clauses[i].Item1;
 
                 var invokeExpression = Expression.IfThen(conditionExpression, innerExpression);
-                var invoke = Expression.Lambda<Action<TContext, Action<TContext, T>>>(invokeExpression, _contextParameter, actionParameter).Compile();
+                var invoke = Expression.Lambda<Action<TContext, Action<TContext, T>>>(invokeExpression, _contextParameter, actionParameter).CompileFast();
 
                 _binder.AddRule(ctx =>
                     {
