@@ -136,6 +136,8 @@ namespace PropertyBinder
 
     public static class Binder
     {
+        private static bool _debugMode = Debugger.IsAttached;
+
         private sealed class BindingTransaction : IDisposable
         {
             public BindingTransaction()
@@ -154,12 +156,25 @@ namespace PropertyBinder
             return new BindingTransaction();
         }
 
-        public static void SetTracingMethod(Action<string> tracer)
+        public static void SetTracer(IBindingTracer tracer)
         {
-            BindingExecutor.SetTracingMethod(tracer);
+            BindingExecutor.SetTracer(tracer);
         }
 
-        public static bool DebugMode { get; set; } = Debugger.IsAttached;
+        public static bool DebugMode
+        {
+            get => _debugMode;
+            set
+            {
+                if (_debugMode != value)
+                {
+                    _debugMode = value;
+                    BindingExecutor.ResetInstance();
+                }
+            }
+        }
+
+        public static IExpressionCompiler ExpressionCompiler { get; set; } = DefaultExpressionCompiler.Instance;
 
         public static CommandCanExecuteCheckMode DefaultCommandCanExecuteCheckMode { get; set; } = CommandCanExecuteCheckMode.DoNotCheck;
     }

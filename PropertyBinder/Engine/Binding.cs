@@ -1,3 +1,4 @@
+using System;
 using PropertyBinder.Diagnostics;
 
 namespace PropertyBinder.Engine

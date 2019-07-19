@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using PropertyBinder.Helpers;
 
 namespace PropertyBinder.Engine
 {
@@ -86,7 +87,8 @@ namespace PropertyBinder.Engine
             return new ObjectWatcher<TParent, TNode>(
                 _targetSelector,
                 CreateSubWatchers(bindingsFactory),
-                _bindingActions.ToDictionary(x => x.Key, x => bindingsFactory(x.Value)));
+                _bindingActions.ToReadOnlyDictionary(x => x.Key, x => bindingsFactory(x.Value)),
+                _collectionNode?.CreateWatcher(bindingsFactory));
         }
 
         public IBindingNode<TParent> Clone()
@@ -108,20 +110,9 @@ namespace PropertyBinder.Engine
                 _collectionNode != null ? _collectionNode.Clone() : null);
         }
 
-        private IDictionary<string, IObjectWatcher<TNode>> CreateSubWatchers(Func<IEnumerable<int>, Binding[]> bindingsFactory)
+        private IReadOnlyDictionary<string, IObjectWatcher<TNode>> CreateSubWatchers(Func<IEnumerable<int>, Binding[]> bindingsFactory)
         {
-            var dict = _subNodes != null ? _subNodes.ToDictionary(x => x.Key, x => x.Value.CreateWatcher(bindingsFactory)) : null;
-            if (_collectionNode != null)
-            {
-                if (dict == null)
-                {
-                    dict = new Dictionary<string, IObjectWatcher<TNode>>();
-                }
-
-                dict.Add("$<binding>collection", _collectionNode.CreateWatcher(bindingsFactory));
-            }
-
-            return dict;
+            return _subNodes?.ToReadOnlyDictionary(x => x.Key, x => x.Value.CreateWatcher(bindingsFactory));
         }
     }
 

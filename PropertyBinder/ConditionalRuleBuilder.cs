@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
-using FastExpressionCompiler;
 using PropertyBinder.Diagnostics;
 using PropertyBinder.Helpers;
 
@@ -108,9 +106,10 @@ namespace PropertyBinder
                             targetBody,
                             sourceExpression)));
 
-                var assignment = Expression.Lambda<Action<TContext>>(
-                    assignmentExpression,
-                    _contextParameter).CompileFast();
+                var assignment = Binder.ExpressionCompiler.Compile(
+                    Expression.Lambda<Action<TContext>>(
+                        assignmentExpression,
+                        _contextParameter));
 
                 var dependencies = new List<Expression> { conditionExpression, sourceExpression };
                 if (targetParent != targetParameter)
@@ -149,7 +148,7 @@ namespace PropertyBinder
                         : _clauses[i].Item1;
 
                 var invokeExpression = Expression.IfThen(conditionExpression, innerExpression);
-                var invoke = Expression.Lambda<Action<TContext, Action<TContext, T>>>(invokeExpression, _contextParameter, actionParameter).CompileFast();
+                var invoke = Binder.ExpressionCompiler.Compile(Expression.Lambda<Action<TContext, Action<TContext, T>>>(invokeExpression, _contextParameter, actionParameter));
 
                 _binder.AddRule(ctx =>
                     {

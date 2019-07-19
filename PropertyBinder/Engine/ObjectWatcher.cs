@@ -14,17 +14,19 @@ namespace PropertyBinder.Engine
             IsValueType = typeof(TNode).IsValueType;
         }
 
-        private readonly IDictionary<string, IObjectWatcher<TNode>> _subWatchers;
-        private readonly IDictionary<string, Binding[]> _bindings;
+        private readonly IReadOnlyDictionary<string, IObjectWatcher<TNode>> _subWatchers;
+        private readonly IObjectWatcher<TNode> _collectionWatcher;
+        private readonly IReadOnlyDictionary<string, Binding[]> _bindings;
         private readonly Func<TParent, TNode> _targetSelector;
         private TNode _target;
         private readonly PropertyChangedEventHandler _handler;
 
-        public ObjectWatcher(Func<TParent, TNode> targetSelector, IDictionary<string, IObjectWatcher<TNode>> subWatchers, IDictionary<string, Binding[]> bindings)
+        public ObjectWatcher(Func<TParent, TNode> targetSelector, IReadOnlyDictionary<string, IObjectWatcher<TNode>> subWatchers, IReadOnlyDictionary<string, Binding[]> bindings, IObjectWatcher<TNode> collectionWatcher)
         {
             _targetSelector = targetSelector;
             _subWatchers = subWatchers;
             _bindings = bindings;
+            _collectionWatcher = collectionWatcher;
             _handler = _subWatchers == null ? TerminalTargetPropertyChanged : new PropertyChangedEventHandler(TargetPropertyChanged);
         }
 
@@ -57,6 +59,8 @@ namespace PropertyBinder.Engine
                     node.Attach(_target);
                 }
             }
+
+            _collectionWatcher?.Attach(_target);
         }
 
         public void Dispose()

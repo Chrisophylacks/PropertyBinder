@@ -16,8 +16,8 @@ namespace PropertyBinder.Experiments
         static void Main(string[] args)
         {
             //DebugTest();
-            DebugStackFrameTest();
-            //PerformanceTest();
+            //DebugStackFrameTest();
+            PerformanceTest();
             //DictionaryPerfTest();
         }
 
@@ -69,6 +69,9 @@ namespace PropertyBinder.Experiments
 
         private static void PerformanceTest2()
         {
+            var tracer = new StopwatchTracer();
+            Binder.SetTracer(tracer);
+
             var action = new BindingAction<string>
             {
                 Action = TestExecute
@@ -110,7 +113,8 @@ namespace PropertyBinder.Experiments
             sw.Stop();
 
             // expected result: 400ms on average workstation
-            Console.WriteLine(sw.ElapsedMilliseconds);
+            Console.WriteLine($"Total: {sw.ElapsedMilliseconds}ms");
+            Console.WriteLine($"Bindings: {tracer.Elapsed.TotalMilliseconds}ms");
             Console.ReadLine();
         }
 
@@ -128,7 +132,6 @@ namespace PropertyBinder.Experiments
 
         private static void DebugTest()
         {
-            Binder.SetTracingMethod(x => Console.WriteLine("[binder] " + x));
             var user = new UserModel();
             using (Binder.BeginTransaction())
             {
@@ -154,6 +157,9 @@ namespace PropertyBinder.Experiments
 
         private static void PerformanceTest()
         {
+            var tracer = new StopwatchTracer();
+            //Binder.SetTracer(tracer);
+
             var consumer = new Consumer();
             var model1 = new Model
             {
@@ -203,7 +209,9 @@ namespace PropertyBinder.Experiments
             sw.Stop();
 
             // expected result: 400ms on average workstation
-            Console.WriteLine(sw.ElapsedMilliseconds);
+            Console.WriteLine($"Total: {sw.ElapsedMilliseconds}ms");
+            Console.WriteLine($"Bindings: {tracer.Elapsed.TotalMilliseconds}ms");
+
             Console.ReadLine();
         }
 

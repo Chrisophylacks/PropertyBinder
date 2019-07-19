@@ -4,16 +4,13 @@ namespace PropertyBinder.Engine
 {
     internal sealed class TransactionBinding : Binding
     {
-        static TransactionBinding()
-        {
-            Instance = new TransactionBinding();
-        }
+        public Binding Parent { get; }
 
-        public static TransactionBinding Instance { get; }
-
-        private TransactionBinding()
+        public TransactionBinding(Binding parent)
             : base(new DebugContext("Transaction", null))
-        { }
+        {
+            Parent = parent;
+        }
 
         public override object Context => this;
 

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
-using FastExpressionCompiler;
 using PropertyBinder.Diagnostics;
 using PropertyBinder.Helpers;
 using PropertyBinder.Visitors;
@@ -66,7 +65,7 @@ namespace PropertyBinder
                 _dependencies.Add(targetParent);
             }
 
-            AddRule(assignment.CompileFast(), key);
+            AddRule(Binder.ExpressionCompiler.Compile(assignment), key);
         }
 
         public void To(Action<TContext, T> action)
@@ -86,7 +85,7 @@ namespace PropertyBinder
                     getValueExpression),
                 contextParameter);
 
-            AddRule(finalExpression.CompileFast(), _key);
+            AddRule(Binder.ExpressionCompiler.Compile(finalExpression), _key);
         }
 
         public void To(Action<TContext> action)
