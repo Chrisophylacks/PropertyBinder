@@ -125,7 +125,7 @@ namespace PropertyBinder.Engine
 
         protected override void SuspendInternal()
         {
-            _executingBinding = new ScheduledBinding(new TransactionBinding(_executingBinding.Binding), _executingBinding);
+            _executingBinding = new ScheduledBinding(new TransactionBinding(_executingBinding?.Binding), _executingBinding);
         }
 
         protected override void ResumeInternal()
