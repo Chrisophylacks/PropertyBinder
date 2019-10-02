@@ -13,6 +13,7 @@ namespace PropertyBinder
         IConditionalRuleBuilderPhase2<T, TContext> DoNotRunOnAttach();
         IConditionalRuleBuilderPhase2<T, TContext> DoNotOverride();
         IConditionalRuleBuilderPhase2<T, TContext> OverrideKey(string bindingRuleKey);
+        IConditionalRuleBuilderPhase2<T, TContext> WithDependency<TDependency>(Expression<Func<TContext, TDependency>> dependencyExpression);
 
         IConditionalRuleBuilderPhase2<T, TContext> Debug(Action<TContext> debugAction);
 
@@ -32,6 +33,7 @@ namespace PropertyBinder
     {
         private readonly Binder<TContext> _binder;
         private readonly List<Tuple<Expression, Expression, DebugContextBuilder>> _clauses = new List<Tuple<Expression, Expression, DebugContextBuilder>>();
+        private readonly List<Expression> _dependencies = new List<Expression>();
         private readonly ParameterExpression _contextParameter;
         private bool _runOnAttach = true;
         private bool _canOverride = true;
@@ -72,6 +74,12 @@ namespace PropertyBinder
         public IConditionalRuleBuilderPhase2<T, TContext> Debug(Action<TContext> debugAction)
         {
             _debugAction = debugAction;
+            return this;
+        }
+
+        public IConditionalRuleBuilderPhase2<T, TContext> WithDependency<TDependency>(Expression<Func<TContext, TDependency>> dependencyExpression)
+        {
+            _dependencies.Add(dependencyExpression.Body);
             return this;
         }
 
@@ -117,6 +125,8 @@ namespace PropertyBinder
                     dependencies.Add(targetParent);
                 }
 
+                dependencies.AddRange(_dependencies);
+
                 _binder.AddRule(assignment, key, _clauses[i].Item3.CreateContext(typeof(TContext).Name, key), _runOnAttach, i == 0 && _canOverride, dependencies);
             }
         }
@@ -153,7 +163,7 @@ namespace PropertyBinder
                 _binder.AddRule(ctx =>
                     {
                         invoke(ctx, action);
-                    }, _key, _clauses[i].Item3.CreateContext(typeof(TContext).Name, _key), _runOnAttach, i == 0 && _canOverride, new[] { invokeExpression });
+                    }, _key, _clauses[i].Item3.CreateContext(typeof(TContext).Name, _key), _runOnAttach, i == 0 && _canOverride, new[] { invokeExpression }.Concat(_dependencies));
             }
         }
 

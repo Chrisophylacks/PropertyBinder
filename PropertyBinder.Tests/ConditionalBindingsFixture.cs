@@ -233,5 +233,46 @@ namespace PropertyBinder.Tests
                 stub.String = "a";
             }
         }
+
+        [Test]
+        public void ShouldRespectWithDependencyForPropertyBinding()
+        {
+            _binder.BindIf(x => x.Flag, x => x.Int.ToString())
+                .Else(x => x.Int.ToString() + "1")
+                .WithDependency(x => x.String)
+                .To(x => x.String2);
+
+            var stub = new UniversalStubEx();
+
+            using (_binder.Attach(stub))
+            {
+                using (stub.VerifyChangedOnce("String2"))
+                {
+                    stub.Int = 1;
+                }
+            }
+        }
+
+        [Test]
+        public void ShouldRespectWithDependencyForActionBinding()
+        {
+            _binder.BindIf(x => x.Flag, x => x.Int.ToString())
+                .Else(x => x.Int.ToString() + "1")
+                .WithDependency(x => x.String)
+                .To((x, v) =>
+                {
+                     x.String2 = v;
+                });
+
+            var stub = new UniversalStubEx();
+
+            using (_binder.Attach(stub))
+            {
+                using (stub.VerifyChangedOnce("String2"))
+                {
+                    stub.Int = 1;
+                }
+            }
+        }
     }
 }
