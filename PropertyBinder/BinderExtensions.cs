@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Linq.Expressions;
 using PropertyBinder.Decompiler;
+using PropertyBinder.Diagnostics;
 using PropertyBinder.Helpers;
 
 namespace PropertyBinder
@@ -42,6 +43,18 @@ namespace PropertyBinder
             where TContext : class
         {
             return new ConditionalRuleBuilder<T, TContext>(binder, conditionalExpression, targetExpression);
+        }
+
+        public static void BindAction<TContext>(this Binder<TContext> binder, Expression<Action<TContext>> expression, string overrideKey = null)
+            where TContext : class
+        {
+            binder.AddRule(expression.Compile(), overrideKey, new DebugContextBuilder(expression.Body, null).CreateContext(typeof(TContext).Name, overrideKey), true, !string.IsNullOrEmpty(overrideKey), new Expression[] {expression});
+        }
+
+        public static void AddRule<TContext>(this Binder<TContext> binder, Action<TContext> bindingAction, string key, string debugDescription, bool runOnAttach, bool canOverride, params Expression[] triggerExpressions)
+            where TContext : class
+        {
+            binder.AddRule(bindingAction, key, new DebugContextBuilder(debugDescription).CreateContext(typeof(TContext).Name, key), runOnAttach, canOverride, triggerExpressions);
         }
 
         internal static void BindEvent<TContext>(this Binder<TContext> binder, Action<TContext> eventSubscription)

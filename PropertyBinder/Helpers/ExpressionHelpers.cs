@@ -90,13 +90,13 @@ namespace PropertyBinder.Helpers
             var body = targetExpression.Body as MemberExpression;
             if (body == null)
             {
-                throw new ArgumentOutOfRangeException("targetExpression", "Target expression body must a member expression");
+                throw new ArgumentOutOfRangeException("targetExpression", "Target expression body must be a member expression");
             }
 
             var path = body.GetPathToParameter(targetExpression.Parameters[0].Type);
             if (path == null)
             {
-                throw new ArgumentOutOfRangeException("targetExpression", "Target expression body must be contain only member expressions");
+                throw new ArgumentOutOfRangeException("targetExpression", "Target expression body must contain only member expressions");
             }
 
             return string.Join(".", path.Select(x => x.Name).ToArray());

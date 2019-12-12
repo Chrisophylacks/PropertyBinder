@@ -10,10 +10,9 @@ namespace PropertyBinder.Diagnostics
         private readonly StackFrame _frame;
         private readonly string _sourceDescription;
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public DebugContextBuilder(Expression source, string comment)
+        public DebugContextBuilder(string description)
         {
-            _sourceDescription = source + comment;
+            _sourceDescription = description;
             if (Binder.DebugMode)
             {
                 var stackTrace = new StackTrace(1, true);
@@ -27,6 +26,12 @@ namespace PropertyBinder.Diagnostics
                     }
                 }
             }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public DebugContextBuilder(Expression source, string comment)
+            : this(Binder.DebugMode ? (source + comment) : comment)
+        {
         }
 
         public DebugContext CreateContext(string targetClassName, string targetKey)

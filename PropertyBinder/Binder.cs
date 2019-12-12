@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using PropertyBinder.Diagnostics;
 using PropertyBinder.Engine;
 using PropertyBinder.Visitors;
@@ -68,6 +69,21 @@ namespace PropertyBinder
                     _actions[i] = null;
                 }
             }
+        }
+
+        public Action<TContext> GetActionByKey(string key)
+        {
+            Action<TContext> result = null;
+
+            for (int i = 0; i < _actions.Count; ++i)
+            {
+                if (_actions[i] != null && _actions[i].Key == key)
+                {
+                    result += _actions[i].Action;
+                }
+            }
+
+            return result ?? (_ => { });
         }
 
         public IDisposable Attach(TContext context)

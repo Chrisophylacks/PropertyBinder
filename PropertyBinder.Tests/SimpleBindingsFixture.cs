@@ -453,5 +453,25 @@ namespace PropertyBinder.Tests
                 stub.Value.Value.String2.ShouldBe("c");
             }
         }
+
+        [Test]
+        public void ShouldBindAction()
+        {
+            var binder = new Binder<UniversalStub>();
+            binder.BindAction(x => ActionBinding(x, x.NullableInt ?? -1));
+
+            using (binder.Attach(_stub))
+            {
+                _stub.Int.ShouldBe(-1);
+
+                _stub.NullableInt = 1;
+                _stub.Int.ShouldBe(1);
+            }
+        }
+
+        private static void ActionBinding(UniversalStub stub, int source)
+        {
+            stub.Int = source;
+        }
     }
 }

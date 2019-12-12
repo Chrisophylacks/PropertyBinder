@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using NUnit.Framework;
 using Shouldly;
 
@@ -99,6 +100,20 @@ namespace PropertyBinder.Tests
                 _stub.String.ShouldBe("a");
                 _stub.Nested = null;
                 _stub.String.ShouldBe(string.Empty);
+            }
+        }
+
+        [Test]
+        public void ShouldPropagateNullsThroughAggregations()
+        {
+            _binder.Bind(x => x.Collection.FirstOrDefault(y => y.Int == 1).String).PropagateNullValues().To(x => x.String);
+            using (_binder.Attach(_stub))
+            {
+                _stub.String.ShouldBe(null);
+                _stub.Collection.Add(new UniversalStub { Int = 1, String = "a" });
+                _stub.String.ShouldBe("a");
+                _stub.Collection.Clear();
+                _stub.String.ShouldBe(null);
             }
         }
     }
