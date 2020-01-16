@@ -1,13 +1,34 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace PropertyBinder.Experiments
 {
-    public class Base : INotifyPropertyChanged
+    public class Base : INotifyPropertyChanged, IDisposable
     {
+        private List<IDisposable> anchors = new List<IDisposable>();
+
         public event PropertyChangedEventHandler PropertyChanged;
+
+        public void Dispose()
+        {
+            foreach (var anchor in anchors)
+            {
+                anchor.Dispose();
+            }
+            anchors.Clear();
+        }
+
+        protected T Anchor<T>(T value)
+            where T : IDisposable
+        {
+            anchors.Add(value);
+            return value;
+        }
 
         protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
@@ -58,7 +79,7 @@ namespace PropertyBinder.Experiments
 
         public Source()
         {
-            Binder.Attach(this);
+            Anchor(Binder.Attach(this));
         }
 
         public Model Model { get; set; }
@@ -97,7 +118,8 @@ namespace PropertyBinder.Experiments
 
         public Consumer()
         {
-            Binder.Attach(this);
+            Anchor(Source);
+            Anchor(Binder.Attach(this));
         }
 
         public Source Source { get; } = new Source();
@@ -106,4 +128,41 @@ namespace PropertyBinder.Experiments
 
         public string FormattedAggregate { get; set; }
     }
+
+    public class ExplosiveModel : Base
+    {
+        static readonly Binder<ExplosiveModel> Binder = new Binder<ExplosiveModel>();
+
+        static ExplosiveModel()
+        {
+            Binder.Bind(x => x.Consumer.FormattedAggregate).To(x => x.Aggregate);
+        }
+
+        public ExplosiveModel(int size)
+        {
+            Consumer = Anchor(new Consumer());
+            for (int i = 0; i < size; ++i)
+            {
+                Children.Add(Anchor(new ExplosiveModel(size - 1)));
+            }
+
+            Anchor(Binder.Attach(this));
+        }
+
+        public Consumer Consumer { get; }
+
+        public string Aggregate { get; private set; }
+
+        public ObservableCollection<ExplosiveModel> Children { get; } = new ObservableCollection<ExplosiveModel>();
+
+        public void ModifyAll()
+        {
+            Consumer.Source.Model = new Model();
+            foreach (var child in Children)
+            {
+                child.ModifyAll();
+            }
+        }
+    }
+
 }

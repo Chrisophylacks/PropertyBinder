@@ -82,7 +82,7 @@ namespace PropertyBinder.Engine
             currentAction.Add(actionIndex);
         }
 
-        public IObjectWatcher<TParent> CreateWatcher(Func<IEnumerable<int>, Binding[]> bindingsFactory)
+        public IObjectWatcher<TParent> CreateWatcher(Func<ICollection<int>, Binding[]> bindingsFactory)
         {
             return new ObjectWatcher<TParent, TNode>(
                 _targetSelector,
@@ -95,9 +95,9 @@ namespace PropertyBinder.Engine
         {
             return new BindingNode<TParent, TNode>(
                 _targetSelector,
-                _subNodes != null ? _subNodes.ToDictionary(x => x.Key, x => x.Value.Clone()) : null,
+                _subNodes?.ToDictionary(x => x.Key, x => x.Value.Clone()),
                 _bindingActions.ToDictionary(x => x.Key, x => new List<int>(x.Value)),
-                _collectionNode != null ? _collectionNode.Clone() : null);
+                _collectionNode?.Clone());
         }
 
         public virtual IBindingNode<TNewParent> CloneForDerivedParentType<TNewParent>()
@@ -105,12 +105,12 @@ namespace PropertyBinder.Engine
         {
             return new BindingNode<TNewParent, TNode>(
                 x => _targetSelector(x),
-                _subNodes != null ? _subNodes.ToDictionary(x => x.Key, x => x.Value.Clone()) : null,
+                _subNodes?.ToDictionary(x => x.Key, x => x.Value.Clone()),
                 _bindingActions.ToDictionary(x => x.Key, x => new List<int>(x.Value)),
-                _collectionNode != null ? _collectionNode.Clone() : null);
+                _collectionNode?.Clone());
         }
 
-        private IReadOnlyDictionary<string, IObjectWatcher<TNode>> CreateSubWatchers(Func<IEnumerable<int>, Binding[]> bindingsFactory)
+        private IReadOnlyDictionary<string, IObjectWatcher<TNode>> CreateSubWatchers(Func<ICollection<int>, Binding[]> bindingsFactory)
         {
             return _subNodes?.ToReadOnlyDictionary(x => x.Key, x => x.Value.CreateWatcher(bindingsFactory));
         }
@@ -131,9 +131,9 @@ namespace PropertyBinder.Engine
         public override IBindingNode<TNewParent> CloneForDerivedParentType<TNewParent>()
         {
             return new BindingNodeRoot<TNewParent>(
-                _subNodes != null ? _subNodes.ToDictionary(x => x.Key, x => x.Value.CloneForDerivedParentType<TNewParent>()) : null,
+                _subNodes?.ToDictionary(x => x.Key, x => x.Value.CloneForDerivedParentType<TNewParent>()),
                 _bindingActions.ToDictionary(x => x.Key, x => new List<int>(x.Value)),
-                _collectionNode != null ? _collectionNode.CloneForDerivedParentType<TNewParent>() : null);
+                _collectionNode?.CloneForDerivedParentType<TNewParent>());
         }
     }
 }

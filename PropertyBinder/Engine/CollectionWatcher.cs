@@ -9,13 +9,13 @@ namespace PropertyBinder.Engine
         where TCollection : IEnumerable<TItem>
     {
         private readonly Binding[] _ownBindings;
-        private readonly Func<IEnumerable<int>, Binding[]> _bindingsFactory;
+        private readonly Func<ICollection<int>, Binding[]> _bindingsFactory;
         private readonly IBindingNode<TItem> _itemNode;
         private readonly IDictionary<TItem, IObjectWatcher<TItem>> _attachedItems = new Dictionary<TItem, IObjectWatcher<TItem>>();
 
         protected TCollection _target;
 
-        public CollectionWatcher(Binding[] ownBindings, Func<IEnumerable<int>, Binding[]> bindingsFactory, IBindingNode<TItem> itemNode)
+        public CollectionWatcher(Binding[] ownBindings, Func<ICollection<int>, Binding[]> bindingsFactory, IBindingNode<TItem> itemNode)
         {
             _ownBindings = ownBindings;
             _bindingsFactory = bindingsFactory;

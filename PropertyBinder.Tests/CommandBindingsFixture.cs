@@ -101,6 +101,18 @@ namespace PropertyBinder.Tests
         }
 
         [Test]
+        public void ShouldUnbindCommandByKey()
+        {
+            _binder.BindCommand(x => x.Int++, x => x.Flag).OverrideKey("testCommand").To(x => x.Command);
+            _binder.Unbind("testCommand");
+
+            using (_binder.Attach(_stub))
+            {
+                _stub.Command.ShouldBe(null);
+            }
+        }
+
+        [Test]
         public void ShouldNotCrashIfCanExecuteConditionChangesBeforeCommandIsAssigned()
         {
             _binder.Bind(x => x.Int >= 0).To(x => x.Flag);

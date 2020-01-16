@@ -12,7 +12,7 @@ namespace PropertyBinder.Engine
         {
             Name = property.Name;
             _createSelector = t => CreatePropertySelector(t, property);
-            CanSubscribe = true;
+            CanSubscribe = !property.IsDefined(typeof(ImmutableAttribute));
         }
 
         public BindableMember(FieldInfo field)

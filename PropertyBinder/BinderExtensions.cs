@@ -39,6 +39,12 @@ namespace PropertyBinder
             binder.RemoveRule(targetExpression.GetTargetKey());
         }
 
+        public static void Unbind<TContext>(this Binder<TContext> binder, string key)
+            where TContext : class
+        {
+            binder.RemoveRule(key);
+        }
+
         public static IConditionalRuleBuilderPhase1<T, TContext> BindIf<T, TContext>(this Binder<TContext> binder, Expression<Func<TContext, bool>> conditionalExpression, Expression<Func<TContext, T>> targetExpression)
             where TContext : class
         {

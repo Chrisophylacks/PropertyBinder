@@ -21,7 +21,7 @@ namespace PropertyBinder.Engine
         IBindingNode<TNewParent> CloneForDerivedParentType<TNewParent>()
             where TNewParent : TParent;
 
-        IObjectWatcher<TParent> CreateWatcher(Func<IEnumerable<int>, Binding[]> bindingsFactory);
+        IObjectWatcher<TParent> CreateWatcher(Func<ICollection<int>, Binding[]> bindingsFactory);
     }
 
     internal interface IObjectWatcher<in TParent> : IDisposable

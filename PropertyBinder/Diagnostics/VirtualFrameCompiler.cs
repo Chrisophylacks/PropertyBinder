@@ -77,7 +77,7 @@ namespace PropertyBinder.Diagnostics
                 il.Emit(OpCodes.Ldc_I4_1);
                 il.Emit(OpCodes.Add);
                 il.Emit(OpCodes.Ldelem_Ref);
-                il.Emit(OpCodes.Ldfld, typeof(Binding).GetField("DebugContext"));
+                il.Emit(OpCodes.Callvirt, typeof(Binding).GetProperty("DebugContext").GetGetMethod());
                 il.Emit(OpCodes.Callvirt, typeof(DebugContext).GetProperty("VirtualFrame").GetGetMethod());
                 il.Emit(OpCodes.Ldarg_0);
                 il.Emit(OpCodes.Ldarg_1);

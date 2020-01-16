@@ -35,7 +35,7 @@ namespace PropertyBinder.Engine
             return _itemNode ?? (_itemNode = new BindingNode<TItem, TItem>(_ => _));
         }
 
-        public IObjectWatcher<TCollection> CreateWatcher(Func<IEnumerable<int>, Binding[]> bindingsFactory)
+        public IObjectWatcher<TCollection> CreateWatcher(Func<ICollection<int>, Binding[]> bindingsFactory)
         {
             return new CollectionWatcher<TCollection, TItem>(bindingsFactory(_indexes), bindingsFactory, HasBindingActions ? _itemNode : null);
         }
@@ -50,6 +50,5 @@ namespace PropertyBinder.Engine
         {
             return new CollectionBindingNode<TNewCollection, TItem>(new List<int>(_indexes), _itemNode != null ? _itemNode.Clone() : null);
         }
-
     }
 }

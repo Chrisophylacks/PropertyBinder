@@ -15,6 +15,7 @@ namespace PropertyBinder
     {
         private readonly IBindingNode<TContext> _rootNode;
         private readonly List<BindingAction> _actions;
+        private IWatcherFactory<TContext> _factory;
 
         private Binder(IBindingNode<TContext> rootNode, List<BindingAction> actions)
         {
@@ -88,16 +89,14 @@ namespace PropertyBinder
 
         public IDisposable Attach(TContext context)
         {
-            var dict = new Dictionary<int, Binding>();
-            for (int i = 0; i < _actions.Count; ++i)
+            if (_factory == null)
             {
-                var action = _actions[i];
-                dict.Add(i, action != null ? new ContextualBinding(_actions[i], context) : null);
+                _factory = Binder.AllowReuseOfWatchers
+                    ? (IWatcherFactory<TContext>)new ReusableWatcherFactory<TContext>(_actions.ToArray(), _rootNode)
+                    : new DefaultWatcherFactory<TContext>(_actions.ToArray(), _rootNode);
             }
 
-            var factory = new Func<IEnumerable<int>, Binding[]>(e => e.Select(x => dict[x]).Where(x => x != null).ToArray());
-            var watcher = _rootNode.CreateWatcher(factory);
-            watcher.Attach(context);
+            var watcher = _factory.Attach(context);
 
             foreach (var action in _actions)
             {
@@ -129,25 +128,6 @@ namespace PropertyBinder
             public readonly DebugContext DebugContext;
         }
 
-        internal sealed class ContextualBinding : Binding
-        {
-            private readonly BindingAction _bindingAction;
-            private readonly TContext _context;
-
-            public ContextualBinding(BindingAction bindingAction, TContext context)
-                : base(bindingAction.DebugContext)
-            {
-                _bindingAction = bindingAction;
-                _context = context;
-            }
-
-            public override void Execute()
-            {
-                _bindingAction.Action(_context);
-            }
-
-            public override object Context => _context;
-        }
     }
 
     public static class Binder
@@ -193,5 +173,7 @@ namespace PropertyBinder
         public static IExpressionCompiler ExpressionCompiler { get; set; } = DefaultExpressionCompiler.Instance;
 
         public static CommandCanExecuteCheckMode DefaultCommandCanExecuteCheckMode { get; set; } = CommandCanExecuteCheckMode.DoNotCheck;
+
+        public static bool AllowReuseOfWatchers { get; set; } = true;
     }
 }

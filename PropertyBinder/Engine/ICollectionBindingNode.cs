@@ -14,7 +14,7 @@ namespace PropertyBinder.Engine
 
     internal interface ICollectionBindingNode<in TCollection> : ICollectionBindingNode
     {
-        IObjectWatcher<TCollection> CreateWatcher(Func<IEnumerable<int>, Binding[]> bindingsfactory);
+        IObjectWatcher<TCollection> CreateWatcher(Func<ICollection<int>, Binding[]> bindingsfactory);
 
         ICollectionBindingNode<TCollection> Clone();
 

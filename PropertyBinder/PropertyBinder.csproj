@@ -70,12 +70,12 @@
     <Compile Include="Diagnostics\DebugContextBuilder.cs" />
     <Compile Include="Engine\BindableMember.cs" />
     <Compile Include="Engine\BindingExecutor.cs" />
+    <Compile Include="Engine\BindingNode.cs" />
     <Compile Include="Engine\CollectionBindingNode.cs" />
     <Compile Include="Engine\CollectionWatcher.cs" />
     <Compile Include="Engine\Binding.cs" />
     <Compile Include="Engine\ICollectionBindingNode.cs" />
     <Compile Include="Engine\IBindingNode.cs" />
-    <Compile Include="Engine\ObjectBindingNode.cs" />
     <Compile Include="Engine\ObjectWatcher.cs" />
     <Compile Include="Decompiler\MethodAnalyzer.cs" />
     <Compile Include="Engine\TransactionBinding.cs" />
@@ -87,6 +87,8 @@
     <Compile Include="Helpers\TypeExtensions.cs" />
     <Compile Include="Helpers\UniqueActionCollection.cs" />
     <Compile Include="IExpressionCompiler.cs" />
+    <Compile Include="ImmutableAttribute.cs" />
+    <Compile Include="WatcherFactories.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PropertyBinderExtensions.cs" />
     <Compile Include="PropertyRuleBuilder.cs" />
