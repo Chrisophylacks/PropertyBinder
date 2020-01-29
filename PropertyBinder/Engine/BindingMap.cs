@@ -39,12 +39,12 @@ namespace PropertyBinder.Engine
 
         public override void Execute(int index)
         {
-            _actions[index]?.Action(_context);
+            _actions[index].Action(_context);
         }
 
         public override DebugContext GetDebugContext(int index)
         {
-            return _actions[index]?.DebugContext;
+            return _actions[index].DebugContext;
         }
     }
 

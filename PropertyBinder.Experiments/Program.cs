@@ -16,9 +16,9 @@ namespace PropertyBinder.Experiments
         {
             //DebugTest();
             //DebugStackFrameTest();
-            //PerformanceTest();
+            PerformanceTest();
             //DictionaryPerfTest();
-            CreationPerfTest();
+            //CreationPerfTest();
         }
 
         private sealed class BindingAction<T>

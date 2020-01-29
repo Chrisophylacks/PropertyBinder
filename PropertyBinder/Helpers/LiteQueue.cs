@@ -22,15 +22,6 @@ namespace PropertyBinder.Helpers
         private int _size;
         private int _capacity = 4;
 
-        private int tid;
-        private int lastRes;
-
-        public LiteQueue()
-        {
-            tid = Thread.CurrentThread.ManagedThreadId;
-            Console.WriteLine("THREAD:" + tid);
-        }
-
         public void Enqueue(T item)
         {
             if (_size == _items.Length)
@@ -43,15 +34,6 @@ namespace PropertyBinder.Helpers
 
         public void EnqueueUnsafe(T item)
         {
-            --lastRes;
-            if (lastRes < 0)
-            {
-                throw new Exception("aiaiai2");
-            }
-            if (tid != Thread.CurrentThread.ManagedThreadId)
-            {
-                throw new Exception("aiaiai");
-            }
             _items[(_head + _size++) % _capacity] = item;
         }
 
@@ -85,7 +67,6 @@ namespace PropertyBinder.Helpers
 
         public void Reserve(int amount)
         {
-            lastRes = amount;
             if (_size + amount > _capacity)
             {
                 while (_size + amount > _capacity)
