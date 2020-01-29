@@ -3,25 +3,30 @@ using System.Collections.Generic;
 
 namespace PropertyBinder.Engine
 {
-    internal interface IBindingNode
+    internal interface IBindingNodeBuilder
     {
         bool HasBindingActions { get; }
 
-        IBindingNode GetSubNode(BindableMember member);
+        IBindingNodeBuilder GetSubNode(BindableMember member);
 
-        ICollectionBindingNode GetCollectionNode(Type itemType);
+        ICollectionBindingNodeBuilder GetCollectionNode(Type itemType);
 
         void AddAction(string propertyName, int actionIndex);
     }
 
-    internal interface IBindingNode<in TParent> : IBindingNode
+    internal interface IBindingNodeBuilder<in TParent> : IBindingNodeBuilder
     {
-        IBindingNode<TParent> Clone();
+        IBindingNodeBuilder<TParent> Clone();
 
-        IBindingNode<TNewParent> CloneForDerivedParentType<TNewParent>()
+        IBindingNodeBuilder<TNewParent> CloneForDerivedParentType<TNewParent>()
             where TNewParent : TParent;
 
-        IObjectWatcher<TParent> CreateWatcher(Func<ICollection<int>, Binding[]> bindingsFactory);
+        IBindingNode<TParent> CreateBindingNode(int[] actionRemap);
+    }
+
+    internal interface IBindingNode<in TParent>
+    {
+        IObjectWatcher<TParent> CreateWatcher(BindingMap map);
     }
 
     internal interface IObjectWatcher<in TParent> : IDisposable

@@ -8,18 +8,16 @@ namespace PropertyBinder.Engine
     internal class CollectionWatcher<TCollection, TItem> : IObjectWatcher<TCollection>
         where TCollection : IEnumerable<TItem>
     {
-        private readonly Binding[] _ownBindings;
-        private readonly Func<ICollection<int>, Binding[]> _bindingsFactory;
-        private readonly IBindingNode<TItem> _itemNode;
+        private readonly CollectionBindingNode<TCollection, TItem> _node;
+        private readonly BindingMap _map;
         private readonly IDictionary<TItem, IObjectWatcher<TItem>> _attachedItems = new Dictionary<TItem, IObjectWatcher<TItem>>();
 
         protected TCollection _target;
 
-        public CollectionWatcher(Binding[] ownBindings, Func<ICollection<int>, Binding[]> bindingsFactory, IBindingNode<TItem> itemNode)
+        public CollectionWatcher(CollectionBindingNode<TCollection, TItem> node, BindingMap map)
         {
-            _ownBindings = ownBindings;
-            _bindingsFactory = bindingsFactory;
-            _itemNode = itemNode;
+            _node = node;
+            _map = map;
         }
 
         public void Attach(TCollection parent)
@@ -40,7 +38,7 @@ namespace PropertyBinder.Engine
                 notify.CollectionChanged += TargetCollectionChanged;
             }
 
-            if (_target != null && _itemNode != null)
+            if (_target != null && _node.ItemNode != null)
             {
                 AttachItems();
             }
@@ -53,12 +51,12 @@ namespace PropertyBinder.Engine
 
         protected virtual void TargetCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
-            if (_ownBindings != null)
+            if (_node.Indexes.Length > 0)
             {
-                BindingExecutor.Execute(_ownBindings);
+                BindingExecutor.Execute(_map, _node.Indexes);
             }
 
-            if (_itemNode != null)
+            if (_node.ItemNode != null)
             {
                 switch (e.Action)
                 {
@@ -122,7 +120,7 @@ namespace PropertyBinder.Engine
         {
             if (item != null && !_attachedItems.ContainsKey(item))
             {
-                var watcher = _itemNode.CreateWatcher(_bindingsFactory);
+                var watcher = _node.ItemNode.CreateWatcher(_map);
                 watcher.Attach(item);
                 _attachedItems.Add(item, watcher);
             }

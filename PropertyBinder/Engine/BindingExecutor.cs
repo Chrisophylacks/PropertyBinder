@@ -1,9 +1,10 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using PropertyBinder.Diagnostics;
+using PropertyBinder.Helpers;
 
 namespace PropertyBinder.Engine
 {
@@ -33,9 +34,9 @@ namespace PropertyBinder.Engine
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Execute(Binding[] bindings)
+        public static void Execute(BindingMap map, int[] bindings)
         {
-            Instance.ExecuteInternal(bindings);
+            Instance.ExecuteInternal(map, bindings);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -50,7 +51,7 @@ namespace PropertyBinder.Engine
             Instance.ResumeInternal();
         }
 
-        protected abstract void ExecuteInternal(Binding[] bindings);
+        protected abstract void ExecuteInternal(BindingMap map, int[] bindings);
 
         protected abstract void SuspendInternal();
 
@@ -59,60 +60,60 @@ namespace PropertyBinder.Engine
 
     internal sealed class ProductionModeBindingExecutor : BindingExecutor
     {
-        private readonly Queue<Binding> _scheduledBindings = new Queue<Binding>();
-        private Binding _executingBinding;
+        private readonly LiteQueue<BindingReference> _scheduledBindings = new LiteQueue<BindingReference>();
+        private int _executeLock;
 
         protected override void SuspendInternal()
         {
-            _executingBinding = new TransactionBinding(_executingBinding);
+            ++_executeLock;
         }
 
         protected override void ResumeInternal()
         {
-            var transaction = _executingBinding as TransactionBinding;
-            if (transaction == null)
+            if (_executeLock == 0)
             {
                 throw new InvalidOperationException("Binder in not currently in transaction mode");
             }
 
-            _executingBinding = transaction.Parent;
-            ExecuteInternal(new Binding[0]);
+            --_executeLock;
+            ExecuteInternal(null, new int[0]);
         }
 
-        protected override void ExecuteInternal(Binding[] bindings)
+        protected override void ExecuteInternal(BindingMap map, int[] bindings)
         {
-            foreach (var binding in bindings)
+            _scheduledBindings.Reserve(bindings.Length);
+            foreach (var i in bindings)
             {
-                if (!binding.IsScheduled)
+                if (!map.Schedule[i])
                 {
-                    _scheduledBindings.Enqueue(binding);
-                    binding.IsScheduled = true;
+                    map.Schedule[i] = true;
+                    _scheduledBindings.EnqueueUnsafe(new BindingReference(map, i));
                 }
             }
 
-            if (_executingBinding == null)
+            if (_executeLock == 0)
             {
+                ++_executeLock;
                 try
                 {
                     while (_scheduledBindings.Count > 0)
                     {
-                        _executingBinding = _scheduledBindings.Dequeue();
-                        _executingBinding.IsScheduled = false;
-                        _executingBinding.Execute();
+                        ref BindingReference binding = ref _scheduledBindings.DequeueRef();
+                        binding.UnSchedule();
+                        binding.Execute();
                     }
                 }
                 catch (Exception)
                 {
-                    foreach (var binding in _scheduledBindings)
+                    while (_scheduledBindings.Count > 0)
                     {
-                        binding.IsScheduled = false;
+                        _scheduledBindings.DequeueRef().UnSchedule();
                     }
-                    _scheduledBindings.Clear();
                     throw;
                 }
                 finally
                 {
-                    _executingBinding = null;
+                    --_executeLock;
                 }
             }
         }
@@ -125,41 +126,41 @@ namespace PropertyBinder.Engine
 
         protected override void SuspendInternal()
         {
-            _executingBinding = new ScheduledBinding(new TransactionBinding(_executingBinding?.Binding), _executingBinding);
+            _executingBinding = new ScheduledBinding(new BindingReference(new TransactionBindingMap<ScheduledBinding>(_executingBinding), 0), _executingBinding);
         }
 
         protected override void ResumeInternal()
         {
             _executingBinding = _executingBinding?.Parent;
-            ExecuteInternal(new Binding[0]);
+            ExecuteInternal(null, new int[0]);
         }
 
         private sealed class ScheduledBinding
         {
-            public ScheduledBinding(Binding binding, ScheduledBinding parent)
+            public ScheduledBinding(BindingReference binding, ScheduledBinding parent)
             {
                 Binding = binding;
                 Parent = parent;
             }
 
-            public readonly Binding Binding;
+            public readonly BindingReference Binding;
 
             public readonly ScheduledBinding Parent;
         }
 
-        protected override void ExecuteInternal(Binding[] bindings)
+        protected override void ExecuteInternal(BindingMap map, int[] bindings)
         {
-            foreach (var binding in bindings)
+            foreach (var i in bindings)
             {
-                if (!binding.IsScheduled)
+                var binding = new BindingReference(map, i);
+                if (binding.Schedule())
                 {
                     _scheduledBindings.Enqueue(new ScheduledBinding(binding, _executingBinding));
-                    binding.IsScheduled = true;
-                    _tracer?.OnScheduled(binding.DebugContext.Description);
+                    _tracer?.OnScheduled(map.GetDebugContext(i).Description);
                 }
                 else
                 {
-                    _tracer?.OnIgnored(binding.DebugContext.Description);
+                    _tracer?.OnIgnored(map.GetDebugContext(i).Description);
                 }
             }
 
@@ -170,12 +171,14 @@ namespace PropertyBinder.Engine
                     while (_scheduledBindings.Count > 0)
                     {
                         _executingBinding = _scheduledBindings.Dequeue();
-                        _executingBinding.Binding.IsScheduled = false;
-                        _tracer?.OnStarted(_executingBinding.Binding.DebugContext.Description);
+                        _executingBinding.Binding.UnSchedule();
+                        var description = _executingBinding.Binding.DebugContext?.Description;
+                        _tracer?.OnStarted(description);
 
                         if (Binder.DebugMode)
                         {
                             var tracedBindings = TraceBindings().ToArray();
+                            var f = tracedBindings[0].DebugContext.VirtualFrame;
                             tracedBindings[0].DebugContext.VirtualFrame(tracedBindings, 0);
                         }
                         else
@@ -183,15 +186,15 @@ namespace PropertyBinder.Engine
                             _executingBinding.Binding.Execute();
                         }
 
-                        _tracer?.OnEnded(_executingBinding.Binding.DebugContext.Description);
+                        _tracer?.OnEnded(description);
                     }
                 }
                 catch (Exception ex)
                 {
                     _tracer?.OnException(ex);
-                    foreach (var tp in _scheduledBindings)
+                    foreach (var binding in _scheduledBindings)
                     {
-                        tp.Binding.IsScheduled = false;
+                        binding.Binding.UnSchedule();
                     }
                     _scheduledBindings.Clear();
                     throw;
@@ -203,9 +206,9 @@ namespace PropertyBinder.Engine
             }
         }
 
-        public IEnumerable<Binding> TraceBindings()
+        public IEnumerable<BindingReference> TraceBindings()
         {
-            var bindings = new List<Binding>();
+            var bindings = new List<BindingReference>();
             var current = _executingBinding;
 
             while (current != null)
@@ -217,6 +220,48 @@ namespace PropertyBinder.Engine
             bindings.Reverse();
 
             return bindings;
+        }
+    }
+
+    internal struct BindingReference
+    {
+        public readonly BindingMap Map;
+        public readonly int Index;
+
+        public BindingReference(BindingMap map, int index)
+        {
+            Map = map;
+            Index = index;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool Schedule()
+        {
+            if (!Map.Schedule[Index])
+            {
+                Map.Schedule[Index] = true;
+                return true;
+            }
+
+            return false;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void UnSchedule()
+        {
+            Map.Schedule[Index] = false;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Execute()
+        {
+            Map.Execute(Index);
+        }
+
+        public DebugContext DebugContext
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Map.GetDebugContext(Index);
         }
     }
 }

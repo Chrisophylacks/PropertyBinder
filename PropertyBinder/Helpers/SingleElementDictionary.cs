@@ -20,7 +20,7 @@ namespace PropertyBinder.Helpers
 
         public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
         {
-            return new List<KeyValuePair<TKey, TValue>>(1) { new KeyValuePair<TKey, TValue>() }.GetEnumerator();
+            return new List<KeyValuePair<TKey, TValue>>(1) { new KeyValuePair<TKey, TValue>(_key, _value) }.GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
@@ -41,7 +41,6 @@ namespace PropertyBinder.Helpers
             {
                 value = _value;
                 return true;
-
             }
 
             value = default(TValue);

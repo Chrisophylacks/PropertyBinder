@@ -7,7 +7,7 @@ namespace PropertyBinder.Diagnostics
     internal sealed class DebugContext
     {
         private readonly StackFrame _frame;
-        private Action<Binding[], int> _virtualFrame;
+        private Action<BindingReference[], int> _virtualFrame;
 
         public DebugContext(string description, StackFrame frame)
         {
@@ -17,6 +17,6 @@ namespace PropertyBinder.Diagnostics
 
         public string Description { get; }
 
-        public Action<Binding[], int> VirtualFrame => _virtualFrame ?? (_virtualFrame = VirtualFrameCompiler.CreateMethodFrame(Description, _frame));
+        public Action<BindingReference[], int> VirtualFrame => _virtualFrame ?? (_virtualFrame = VirtualFrameCompiler.CreateMethodFrame(Description, _frame));
     }
 }

@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 
+using PropertyBinder.Helpers;
+
 namespace PropertyBinder.Engine
 {
     internal sealed class ObjectWatcher<TParent, TNode> : IObjectWatcher<TParent>
@@ -16,17 +18,20 @@ namespace PropertyBinder.Engine
 
         private readonly IReadOnlyDictionary<string, IObjectWatcher<TNode>> _subWatchers;
         private readonly IObjectWatcher<TNode> _collectionWatcher;
-        private readonly IReadOnlyDictionary<string, Binding[]> _bindings;
-        private readonly Func<TParent, TNode> _targetSelector;
+        private readonly BindingMap _map;
         private TNode _target;
         private readonly PropertyChangedEventHandler _handler;
+        private readonly BindingNode<TParent, TNode> _bindingNode;
 
-        public ObjectWatcher(Func<TParent, TNode> targetSelector, IReadOnlyDictionary<string, IObjectWatcher<TNode>> subWatchers, IReadOnlyDictionary<string, Binding[]> bindings, IObjectWatcher<TNode> collectionWatcher)
+        public ObjectWatcher(BindingNode<TParent, TNode> bindingNode, BindingMap map)
         {
-            _targetSelector = targetSelector;
-            _subWatchers = subWatchers;
-            _bindings = bindings;
-            _collectionWatcher = collectionWatcher;
+            _bindingNode = bindingNode;
+            _map = map;
+            if (bindingNode.CollectionNode != null)
+            {
+                _collectionWatcher = bindingNode.CollectionNode.CreateWatcher(map);
+            }
+            _subWatchers = bindingNode.SubNodes?.ToReadOnlyDictionary2(x => x.Key, x => x.Value.CreateWatcher(map));
             _handler = _subWatchers == null ? TerminalTargetPropertyChanged : new PropertyChangedEventHandler(TargetPropertyChanged);
         }
 
@@ -41,7 +46,7 @@ namespace PropertyBinder.Engine
                 }
             }
 
-            _target = parent == null ? default(TNode) : _targetSelector(parent);
+            _target = parent == null ? default(TNode) : _bindingNode.TargetSelector(parent);
 
             if (!IsValueType)
             {
@@ -72,25 +77,26 @@ namespace PropertyBinder.Engine
         {
             IObjectWatcher<TNode> node;
             var propertyName = e.PropertyName;
-            if (_subWatchers.TryGetValue(e.PropertyName, out node))
+            if (_subWatchers.TryGetValue(propertyName, out node))
             {
                 node.Attach(_target);
             }
 
-            Binding[] bindings;
-            if (_bindings.TryGetValue(propertyName, out bindings))
+            int[] bindings;
+            if (_bindingNode.BindingActions.TryGetValue(propertyName, out bindings))
             {
-                BindingExecutor.Execute(bindings);
+                BindingExecutor.Execute(_map, bindings);
             }
         }
 
         private void TerminalTargetPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            Binding[] bindings;
-            if (_bindings.TryGetValue(e.PropertyName, out bindings))
+            int[] bindings;
+            if (_bindingNode.BindingActions.TryGetValue(e.PropertyName, out bindings))
             {
-                BindingExecutor.Execute(bindings);
+                BindingExecutor.Execute(_map, bindings);
             }
         }
     }
+
 }

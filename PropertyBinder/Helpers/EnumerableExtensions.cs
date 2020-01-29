@@ -16,6 +16,17 @@ namespace PropertyBinder.Helpers
 
             return source.ToDictionary(keySelector, valueSelector);
         }
+        
+        public static IReadOnlyDictionary<TKey, TValue> ToReadOnlyDictionary2<TSource, TKey, TValue>(this IReadOnlyCollection<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TValue> valueSelector)
+        {
+            if (source.Count == 1)
+            {
+                var item = source.ElementAt(0);
+                return new SingleElementDictionary<TKey, TValue>(keySelector(item), valueSelector(item));
+            }
+
+            return source.ToDictionary(keySelector, valueSelector);
+        }
 
         internal static TResult[] CompactSelect<T, TResult>(this T[] source, ICollection<int> indexes)
             where T : TResult
@@ -37,6 +48,21 @@ namespace PropertyBinder.Helpers
             }
 
             return res;
+        }
+
+        internal static int[] CompactRemap(this IEnumerable<int> source, int[] map)
+        {
+            var res = new List<int>();
+            foreach (var i in source)
+            {
+                var v = map[i];
+                if (v >= 0)
+                {
+                    res.Add(v);
+                }
+            }
+
+            return res.ToArray();
         }
     }
 }

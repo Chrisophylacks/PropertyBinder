@@ -3,22 +3,27 @@ using System.Collections.Generic;
 
 namespace PropertyBinder.Engine
 {
-    internal interface ICollectionBindingNode
+    internal interface ICollectionBindingNodeBuilder
     {
         bool HasBindingActions { get; }
 
-        IBindingNode GetItemNode();
+        IBindingNodeBuilder GetItemNode();
 
         void AddAction(int actionIndex);
     }
 
-    internal interface ICollectionBindingNode<in TCollection> : ICollectionBindingNode
+    internal interface ICollectionBindingNodeBuilder<in TCollection> : ICollectionBindingNodeBuilder
     {
-        IObjectWatcher<TCollection> CreateWatcher(Func<ICollection<int>, Binding[]> bindingsfactory);
+        ICollectionBindingNodeBuilder<TCollection> Clone();
 
-        ICollectionBindingNode<TCollection> Clone();
-
-        ICollectionBindingNode<TNewCollection> CloneForDerivedParentType<TNewCollection>()
+        ICollectionBindingNodeBuilder<TNewCollection> CloneForDerivedParentType<TNewCollection>()
             where TNewCollection : TCollection;
+
+        ICollectionBindingNode<TCollection> CreateBindingNode(int[] actionRemap);
+    }
+
+    internal interface ICollectionBindingNode<in TCollection>
+    {
+        IObjectWatcher<TCollection> CreateWatcher(BindingMap map);
     }
 }

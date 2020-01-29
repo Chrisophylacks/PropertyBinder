@@ -157,6 +157,7 @@ namespace PropertyBinder.Experiments
 
         private static void PerformanceTest()
         {
+            Binder.DebugMode = false;
             var tracer = new StopwatchTracer();
             //Binder.SetTracer(tracer);
 

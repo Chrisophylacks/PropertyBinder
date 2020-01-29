@@ -13,18 +13,19 @@ namespace PropertyBinder
     public sealed class Binder<TContext>
         where TContext : class
     {
-        private readonly IBindingNode<TContext> _rootNode;
+        private readonly IBindingNodeBuilder<TContext> _rootNode;
         private readonly List<BindingAction> _actions;
         private IWatcherFactory<TContext> _factory;
+        private BindingAction[] _compactedActions;
 
-        private Binder(IBindingNode<TContext> rootNode, List<BindingAction> actions)
+        private Binder(IBindingNodeBuilder<TContext> rootNode, List<BindingAction> actions)
         {
             _rootNode = rootNode;
             _actions = actions;
         }
 
         public Binder()
-            : this(new BindingNodeRoot<TContext>(), new List<BindingAction>())
+            : this(new BindingNodeRootBuilder<TContext>(), new List<BindingAction>())
         {
         }
 
@@ -48,6 +49,11 @@ namespace PropertyBinder
 
         internal void AddRule(Action<TContext> bindingAction, string key, DebugContext debugContext, bool runOnAttach, bool canOverride, IEnumerable<Expression> triggerExpressions)
         {
+            if (_factory != null)
+            {
+                throw new InvalidOperationException("This binder already has attached watchers. It cannot be modified, but you can clone it and modify the clone instead.");
+            }
+
             if (!string.IsNullOrEmpty(key) && canOverride)
             {
                 RemoveRule(key);
@@ -63,6 +69,11 @@ namespace PropertyBinder
 
         internal void RemoveRule(string key)
         {
+            if (_factory != null)
+            {
+                throw new InvalidOperationException("This binder already has attached watchers. It cannot be modified, but you can clone it and modify the clone instead.");
+            }
+
             for (int i = 0; i < _actions.Count; ++i)
             {
                 if (_actions[i] != null && _actions[i].Key == key)
@@ -91,16 +102,34 @@ namespace PropertyBinder
         {
             if (_factory == null)
             {
+                var remap = new int[_actions.Count];
+                var compactedActions = new List<BindingAction>();
+                for (int i = 0; i < _actions.Count; ++i)
+                {
+                    var action = _actions[i];
+                    if (action != null)
+                    {
+                        remap[i] = compactedActions.Count;
+                        compactedActions.Add(action);
+                    }
+                    else
+                    {
+                        remap[i] = -1;
+                    }
+                }
+
+                _compactedActions = compactedActions.ToArray();
+
                 _factory = Binder.AllowReuseOfWatchers
-                    ? (IWatcherFactory<TContext>)new ReusableWatcherFactory<TContext>(_actions.ToArray(), _rootNode)
-                    : new DefaultWatcherFactory<TContext>(_actions.ToArray(), _rootNode);
+                    ? (IWatcherFactory<TContext>)new ReusableWatcherFactory<TContext>(_compactedActions, _rootNode.CreateBindingNode(remap))
+                    : new DefaultWatcherFactory<TContext>(_actions.ToArray(), _rootNode.CreateBindingNode(remap));
             }
 
             var watcher = _factory.Attach(context);
 
-            foreach (var action in _actions)
+            foreach (var action in _compactedActions)
             {
-                if (action != null && action.RunOnAttach)
+                if (action.RunOnAttach)
                 {
                     action.Action(context);
                 }
@@ -151,7 +180,7 @@ namespace PropertyBinder
         {
             return new BindingTransaction();
         }
-
+        
         public static void SetTracer(IBindingTracer tracer)
         {
             BindingExecutor.SetTracer(tracer);

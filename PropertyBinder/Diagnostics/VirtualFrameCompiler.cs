@@ -29,7 +29,7 @@ namespace PropertyBinder.Diagnostics
             Assembly.Save(ModuleName);
         }
 
-        public static Action<Binding[], int> CreateMethodFrame(string description, StackFrame frame)
+        public static Action<BindingReference[], int> CreateMethodFrame(string description, StackFrame frame)
         {
             lock (Module)
             {
@@ -42,15 +42,15 @@ namespace PropertyBinder.Diagnostics
                 ClassNames.Add(className);
 
                 var type = Module.DefineType(className, TypeAttributes.Class | TypeAttributes.Public);
-                var method = type.DefineMethod(methodName, MethodAttributes.Public | MethodAttributes.Static, typeof(void), new[] { typeof(Binding[]), typeof(int) });
+                var method = type.DefineMethod(methodName, MethodAttributes.Public | MethodAttributes.Static, typeof(void), new[] { typeof(BindingReference[]), typeof(int) });
                 method.SetImplementationFlags(MethodImplAttributes.NoOptimization);
 
                 var il = method.GetILGenerator();
 
-                var binding = il.DeclareLocal(typeof(Binding));
+                var binding = il.DeclareLocal(typeof(BindingReference));
                 il.Emit(OpCodes.Ldarg_0);
                 il.Emit(OpCodes.Ldarg_1);
-                il.Emit(OpCodes.Ldelem_Ref);
+                il.Emit(OpCodes.Ldelem, typeof(BindingReference));
                 il.Emit(OpCodes.Stloc_S, binding);
 
                 var fileName = frame?.GetFileName();
@@ -76,18 +76,18 @@ namespace PropertyBinder.Diagnostics
                 il.Emit(OpCodes.Ldarg_1);
                 il.Emit(OpCodes.Ldc_I4_1);
                 il.Emit(OpCodes.Add);
-                il.Emit(OpCodes.Ldelem_Ref);
-                il.Emit(OpCodes.Callvirt, typeof(Binding).GetProperty("DebugContext").GetGetMethod());
+                il.Emit(OpCodes.Ldelema, typeof(BindingReference));
+                il.Emit(OpCodes.Call, typeof(BindingReference).GetProperty("DebugContext").GetGetMethod());
                 il.Emit(OpCodes.Callvirt, typeof(DebugContext).GetProperty("VirtualFrame").GetGetMethod());
                 il.Emit(OpCodes.Ldarg_0);
                 il.Emit(OpCodes.Ldarg_1);
                 il.Emit(OpCodes.Ldc_I4_1);
                 il.Emit(OpCodes.Add);
-                il.Emit(OpCodes.Call, typeof(Action<Binding[], int>).GetMethod("Invoke"));
+                il.Emit(OpCodes.Callvirt, typeof(Action<BindingReference[], int>).GetMethod("Invoke"));
                 il.Emit(OpCodes.Ret);
                 il.MarkLabel(lblFin);
-                il.Emit(OpCodes.Ldloc, binding);
-                il.Emit(OpCodes.Callvirt, typeof(Binding).GetMethod("Execute"));
+                il.Emit(OpCodes.Ldloca_S, binding);
+                il.Emit(OpCodes.Call, typeof(BindingReference).GetMethod("Execute"));
                 il.Emit(OpCodes.Ret);
 
                 if (!string.IsNullOrEmpty(fileName))
@@ -96,12 +96,12 @@ namespace PropertyBinder.Diagnostics
                 }
 
                 var actualType = type.CreateType();
-                return (Action<Binding[], int>)actualType.GetMethod(methodName).CreateDelegate(typeof(Action<Binding[], int>));
+                return (Action<BindingReference[], int>)actualType.GetMethod(methodName).CreateDelegate(typeof(Action<BindingReference[], int>));
             }
         }
 
         [MethodImpl(MethodImplOptions.NoOptimization)]
-        private static void SampleFrame(Binding[] bindings, int index)
+        private static void SampleFrame(BindingReference[] bindings, int index)
         {
             var binding = bindings[index];
             if (index < bindings.Length + 1)

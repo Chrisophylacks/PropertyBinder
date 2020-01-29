@@ -10,20 +10,20 @@ namespace PropertyBinder.Engine
 
         public BindableMember(PropertyInfo property)
         {
-            Name = property.Name;
+            Name = string.Intern(property.Name);
             _createSelector = t => CreatePropertySelector(t, property);
             CanSubscribe = !property.IsDefined(typeof(ImmutableAttribute));
         }
 
         public BindableMember(FieldInfo field)
         {
-            Name = field.Name;
+            Name = string.Intern(field.Name);
             _createSelector = t => CreateMemberSelector(t, field);
         }
 
         public BindableMember(string index)
         {
-            Name = index;
+            Name = string.Intern(index);
             _createSelector = t => CreateIndexerSelector(t, index);
             CanSubscribe = true;
         }
