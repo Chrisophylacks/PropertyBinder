@@ -8,7 +8,7 @@ namespace PropertyBinder.Tests
     internal class ExceptionHandlingFixture : BindingsFixture
     {
         [Test]
-        public void ShouldAssignBoundPropertyWhenAttached()
+        public void ShouldHandleExceptions()
         {
             Exception ex = null;
             Binder.SetExceptionHandler((_, e) =>

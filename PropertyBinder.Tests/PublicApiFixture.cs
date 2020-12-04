@@ -12,17 +12,15 @@ namespace PropertyBinder.Tests
         public void ShouldPreservePublicApi()
         {
             string fileName = Path.Combine(Environment.CurrentDirectory, @"..\..\PublicApi.txt");
-            string proposedFileName = Path.Combine(Environment.CurrentDirectory, @"PublicApi.txt.proposed");
 
-            var api = PublicApiGenerator.PublicApiGenerator.GetPublicApi(typeof (Binder<>).Assembly);
+            var api = PublicApiGenerator.ApiGenerator.GeneratePublicApi(typeof (Binder<>).Assembly);
             if (File.Exists(fileName))
             {
                 var currentApi = File.ReadAllText(fileName);
                 if (!string.Equals(api, currentApi))
                 {
-                    File.WriteAllText(proposedFileName, api);
-                    Process.Start(new ProcessStartInfo("winmergeu", string.Format("\"{0}\" \"{1}\"", proposedFileName, fileName)));
-                    throw new Exception("API mismatch");
+                    File.WriteAllText(fileName, api);
+                    throw new Exception("API mismatch, check git diff");
                 }
             }
             else
