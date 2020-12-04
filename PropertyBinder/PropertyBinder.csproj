@@ -78,6 +78,7 @@
     <Compile Include="Engine\IBindingNode.cs" />
     <Compile Include="Engine\ObjectWatcher.cs" />
     <Compile Include="Decompiler\MethodAnalyzer.cs" />
+    <Compile Include="ExceptionEventArgs.cs" />
     <Compile Include="Helpers\EnumerableExtensions.cs" />
     <Compile Include="Helpers\ExpressionHelpers.cs" />
     <Compile Include="Decompiler\IlReader.cs" />

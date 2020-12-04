@@ -83,6 +83,7 @@
     <Compile Include="CollectionBindingsFixture.cs" />
     <Compile Include="CommandBindingsFixture.cs" />
     <Compile Include="ConditionalBindingsFixture.cs" />
+    <Compile Include="ExceptionHandlingFixture.cs" />
     <Compile Include="ImmutableBindingsFixture.cs" />
     <Compile Include="IndexerBindingsFixture.cs" />
     <Compile Include="EventBindingFixture.cs" />

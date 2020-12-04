@@ -186,6 +186,11 @@ namespace PropertyBinder
             BindingExecutor.SetTracer(tracer);
         }
 
+        public static void SetExceptionHandler(EventHandler<ExceptionEventArgs> exceptionHandler)
+        {
+            BindingExecutor.SetExceptionHandler(exceptionHandler);
+        }
+
         public static bool DebugMode
         {
             get => _debugMode;
