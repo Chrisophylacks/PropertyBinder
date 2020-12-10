@@ -1,14 +1,18 @@
 using System;
+using PropertyBinder.Diagnostics;
 
 namespace PropertyBinder
 {
     public class ExceptionEventArgs : EventArgs
     {
-        public ExceptionEventArgs(Exception ex)
+        internal ExceptionEventArgs(Exception ex, DebugContext bindingDebugContext = null)
         {
-            this.Exception = ex;
+            Exception = ex;
+            Description = bindingDebugContext?.Description;
         }
-        
+
+        public string Description { get; }
+
         public Exception Exception { get; }
         public bool Handled { get; set; }
     }

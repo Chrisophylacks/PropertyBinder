@@ -22,7 +22,7 @@ namespace PropertyBinder.Engine
 
         public static BindingExecutor ResetInstance()
         {
-            _instance = (Binder.DebugMode || _tracer != null) ? (BindingExecutor)new DebugModeBindingExecutor(_exceptionHandler) : new ProductionModeBindingExecutor(_exceptionHandler);
+            _instance = (Binder.DebugMode || _tracer != null) ? (BindingExecutor)new DebugModeBindingExecutor() : new ProductionModeBindingExecutor();
             return _instance;
         }
 
@@ -65,14 +65,8 @@ namespace PropertyBinder.Engine
 
     internal sealed class ProductionModeBindingExecutor : BindingExecutor
     {
-        private readonly EventHandler<ExceptionEventArgs> _exceptionHandler;
         private readonly LiteQueue<BindingReference> _scheduledBindings = new LiteQueue<BindingReference>();
         private int _executeLock;
-
-        public ProductionModeBindingExecutor(EventHandler<ExceptionEventArgs> exceptionHandler)
-        {
-            _exceptionHandler = exceptionHandler;
-        }
 
         protected override void SuspendInternal()
         {
@@ -117,7 +111,7 @@ namespace PropertyBinder.Engine
                         }
                         catch (Exception e)
                         {
-                            var exceptionEventArgs = new ExceptionEventArgs(e);
+                            var exceptionEventArgs = new ExceptionEventArgs(e, binding.DebugContext);
                             _exceptionHandler?.Invoke(null, exceptionEventArgs);
                             if (!exceptionEventArgs.Handled)
                             {
@@ -144,14 +138,8 @@ namespace PropertyBinder.Engine
 
     internal sealed class DebugModeBindingExecutor : BindingExecutor
     {
-        private readonly EventHandler<ExceptionEventArgs> _exceptionHandler;
         private readonly Queue<ScheduledBinding> _scheduledBindings = new Queue<ScheduledBinding>();
         private ScheduledBinding _executingBinding;
-
-        public DebugModeBindingExecutor(EventHandler<ExceptionEventArgs> exceptionHandler)
-        {
-            _exceptionHandler = exceptionHandler;
-        }
 
         protected override void SuspendInternal()
         {
@@ -220,7 +208,7 @@ namespace PropertyBinder.Engine
                         catch (Exception ex)
                         {
                             _tracer?.OnException(ex);
-                            var ea = new ExceptionEventArgs(ex);
+                            var ea = new ExceptionEventArgs(ex, _executingBinding.Binding.DebugContext);
                             _exceptionHandler?.Invoke(this, ea);
                             if (!ea.Handled)
                             {
