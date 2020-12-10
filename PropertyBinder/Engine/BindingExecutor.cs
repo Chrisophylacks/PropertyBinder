@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using PropertyBinder.Diagnostics;
 using PropertyBinder.Helpers;
 
@@ -35,7 +36,6 @@ namespace PropertyBinder.Engine
         public static void SetExceptionHandler(EventHandler<ExceptionEventArgs> exceptionHandler)
         {
             _exceptionHandler = exceptionHandler;
-            ResetInstance();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
