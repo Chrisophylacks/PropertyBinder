@@ -131,7 +131,19 @@ namespace PropertyBinder
             {
                 if (action.RunOnAttach)
                 {
-                    action.Action(context);
+                    try
+                    {
+                        action.Action(context);
+                    }
+                    catch (Exception ex)
+                    {
+                        var ea = new ExceptionEventArgs(ex);
+                        Binder.ExceptionHandler?.Invoke(this, ea);
+                        if (!ea.Handled)
+                        {
+                            throw;
+                        }
+                    }
                 }
             }
 
@@ -186,6 +198,12 @@ namespace PropertyBinder
             BindingExecutor.SetTracer(tracer);
         }
 
+        public static void SetExceptionHandler(EventHandler<ExceptionEventArgs> exceptionHandler)
+        {
+            ExceptionHandler = exceptionHandler;
+            BindingExecutor.SetExceptionHandler(exceptionHandler);
+        }
+
         public static bool DebugMode
         {
             get => _debugMode;
@@ -198,7 +216,9 @@ namespace PropertyBinder
                 }
             }
         }
-
+        
+        internal static EventHandler<ExceptionEventArgs> ExceptionHandler { get; private set; }
+        
         public static IExpressionCompiler ExpressionCompiler { get; set; } = DefaultExpressionCompiler.Instance;
 
         public static CommandCanExecuteCheckMode DefaultCommandCanExecuteCheckMode { get; set; } = CommandCanExecuteCheckMode.DoNotCheck;

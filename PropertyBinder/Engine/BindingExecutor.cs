@@ -1,8 +1,8 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using PropertyBinder.Diagnostics;
 using PropertyBinder.Helpers;
 
@@ -12,8 +12,8 @@ namespace PropertyBinder.Engine
     {
         [ThreadStatic]
         private static BindingExecutor _instance;
-
         protected static IBindingTracer _tracer;
+        protected static EventHandler<ExceptionEventArgs> _exceptionHandler;
 
         private static BindingExecutor Instance
         {
@@ -31,6 +31,11 @@ namespace PropertyBinder.Engine
         {
             _tracer = tracer;
             ResetInstance();
+        }
+
+        public static void SetExceptionHandler(EventHandler<ExceptionEventArgs> exceptionHandler)
+        {
+            _exceptionHandler = exceptionHandler;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -100,7 +105,19 @@ namespace PropertyBinder.Engine
                     {
                         ref BindingReference binding = ref _scheduledBindings.DequeueRef();
                         binding.UnSchedule();
-                        binding.Execute();
+                        try
+                        {
+                            binding.Execute();
+                        }
+                        catch (Exception e)
+                        {
+                            var exceptionEventArgs = new ExceptionEventArgs(e, binding.DebugContext);
+                            _exceptionHandler?.Invoke(null, exceptionEventArgs);
+                            if (!exceptionEventArgs.Handled)
+                            {
+                                throw;
+                            }
+                        }
                     }
                 }
                 catch (Exception)
@@ -175,15 +192,28 @@ namespace PropertyBinder.Engine
                         var description = _executingBinding.Binding.DebugContext?.Description;
                         _tracer?.OnStarted(description);
 
-                        if (Binder.DebugMode)
+                        try
                         {
-                            var tracedBindings = TraceBindings().ToArray();
-                            var f = tracedBindings[0].DebugContext.VirtualFrame;
-                            tracedBindings[0].DebugContext.VirtualFrame(tracedBindings, 0);
+                            if (Binder.DebugMode)
+                            {
+                                var tracedBindings = TraceBindings().ToArray();
+                                var f = tracedBindings[0].DebugContext.VirtualFrame;
+                                tracedBindings[0].DebugContext.VirtualFrame(tracedBindings, 0);
+                            }
+                            else
+                            {
+                                _executingBinding.Binding.Execute();
+                            }
                         }
-                        else
+                        catch (Exception ex)
                         {
-                            _executingBinding.Binding.Execute();
+                            _tracer?.OnException(ex);
+                            var ea = new ExceptionEventArgs(ex, _executingBinding.Binding.DebugContext);
+                            _exceptionHandler?.Invoke(this, ea);
+                            if (!ea.Handled)
+                            {
+                                throw;
+                            }
                         }
 
                         _tracer?.OnEnded(description);
@@ -191,7 +221,6 @@ namespace PropertyBinder.Engine
                 }
                 catch (Exception ex)
                 {
-                    _tracer?.OnException(ex);
                     foreach (var binding in _scheduledBindings)
                     {
                         binding.Binding.UnSchedule();
