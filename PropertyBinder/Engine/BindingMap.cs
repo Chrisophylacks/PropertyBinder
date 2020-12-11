@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Specialized;
-using PropertyBinder.Diagnostics;
+﻿using PropertyBinder.Diagnostics;
 
 namespace PropertyBinder.Engine
 {

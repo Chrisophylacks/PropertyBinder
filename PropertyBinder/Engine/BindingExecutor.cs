@@ -219,7 +219,7 @@ namespace PropertyBinder.Engine
                         _tracer?.OnEnded(description);
                     }
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     foreach (var binding in _scheduledBindings)
                     {

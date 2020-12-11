@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFramework>net45</TargetFramework>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\PropertyBinder\PropertyBinder.csproj">
@@ -12,6 +13,7 @@
   <ItemGroup>
     <PackageReference Include="Moq" Version="4.15.2" />
     <PackageReference Include="NUnit" Version="3.12.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />
     <PackageReference Include="PropertyChanged.Fody" Version="3.3.1" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
     <PackageReference Include="PublicApiGenerator" Version="9.3.0" />
     <PackageReference Include="Shouldly" Version="3.0.2" />
