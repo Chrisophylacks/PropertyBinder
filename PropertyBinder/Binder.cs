@@ -6,6 +6,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using PropertyBinder.Diagnostics;
 using PropertyBinder.Engine;
+using PropertyBinder.Helpers;
 using PropertyBinder.Visitors;
 
 namespace PropertyBinder
@@ -34,7 +35,7 @@ namespace PropertyBinder
         {
             return new Binder<TNewContext>(
                 _rootNode.CloneForDerivedParentType<TNewContext>(),
-                _actions.Select(x => x != null ? new Binder<TNewContext>.BindingAction(x.Action, x.Key, x.DebugContext, x.RunOnAttach, x.Stamped) : null).ToList());
+                _actions.Select(x => x != null ? new Binder<TNewContext>.BindingAction(x.Action, x.Key, x.DebugContext, x.RunOnAttach, x.StampExpression) : null).ToList());
         }
 
         public Binder<TContext> Clone()
@@ -48,7 +49,7 @@ namespace PropertyBinder
         }
 
         internal void AddRule(Action<TContext> bindingAction, string key, DebugContext debugContext, bool runOnAttach, bool canOverride,
-            Func<TContext, string> stamped, IEnumerable<Expression> triggerExpressions)
+            Expression stampExpression, IEnumerable<Expression> triggerExpressions)
         {
             if (_factory != null)
             {
@@ -60,7 +61,7 @@ namespace PropertyBinder
                 RemoveRule(key);
             }
 
-            _actions.Add(new BindingAction(bindingAction, key, debugContext, runOnAttach, stamped));
+            _actions.Add(new BindingAction(bindingAction, key, debugContext, runOnAttach, stampExpression));
 
             foreach (var expr in triggerExpressions)
             {
@@ -141,7 +142,8 @@ namespace PropertyBinder
                         ExceptionEventArgs ea;
                         try 
                         {
-                            ea = new ExceptionEventArgs(ex, action.Stamped?.Invoke(context) ?? "");
+                            Func<TContext, string> stamped = ExpressionHelpers.Stamped<TContext>(action.StampExpression);
+                            ea = new ExceptionEventArgs(ex, stamped?.Invoke(context) ?? "");
                         }
                         catch
                         {
@@ -162,13 +164,13 @@ namespace PropertyBinder
 
         internal sealed class BindingAction
         {
-            public BindingAction(Action<TContext> action, string key, DebugContext debugContext, bool runOnAttach, Func<TContext, string> stamped)
+            public BindingAction(Action<TContext> action, string key, DebugContext debugContext, bool runOnAttach, Expression stampExpression)
             {
                 Action = action;
                 Key = key;
                 DebugContext = debugContext;
                 RunOnAttach = runOnAttach;
-                Stamped = stamped;
+                StampExpression = stampExpression;
             }
 
             public readonly Action<TContext> Action;
@@ -179,7 +181,7 @@ namespace PropertyBinder
 
             public readonly DebugContext DebugContext;
 
-            public readonly Func<TContext, string> Stamped;
+            public Expression StampExpression;
         }
     }
 

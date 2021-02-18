@@ -1,4 +1,5 @@
 ﻿using PropertyBinder.Diagnostics;
+using PropertyBinder.Helpers;
 
 namespace PropertyBinder.Engine
 {
@@ -44,7 +45,7 @@ namespace PropertyBinder.Engine
 
         public override string GetStamp(int index)
         {
-            return _actions[index].Stamped?.Invoke(_context) ?? "";
+            return _actions[index].StampExpression != null ? ExpressionHelpers.Stamped<TContext>(_actions[index].StampExpression).Invoke(_context) ?? "" : "";
         }
 
         public override DebugContext GetDebugContext(int index)

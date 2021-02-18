@@ -127,6 +127,11 @@ namespace PropertyBinder.Helpers
 
         public static Func<TContext, string> Stamped<TContext>(Expression exp)
         {
+            if (exp == null)
+            {
+                return null;
+            }
+
             try
             {
                 List<Expression> list = new List<Expression>();

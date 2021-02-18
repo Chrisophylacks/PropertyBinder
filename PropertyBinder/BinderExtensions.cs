@@ -57,10 +57,10 @@ namespace PropertyBinder
             binder.AddRule(expression.Compile(), overrideKey, new DebugContextBuilder(expression.Body, null).CreateContext(typeof(TContext).Name, overrideKey), true, !string.IsNullOrEmpty(overrideKey), null, new Expression[] {expression});
         }
 
-        public static void AddRule<TContext>(this Binder<TContext> binder, Action<TContext> bindingAction, string key, string debugDescription, bool runOnAttach, bool canOverride, Func<TContext, string> stamped, params Expression[] triggerExpressions)
+        public static void AddRule<TContext>(this Binder<TContext> binder, Action<TContext> bindingAction, string key, string debugDescription, bool runOnAttach, bool canOverride, Expression stampExpression, params Expression[] triggerExpressions)
             where TContext : class
         {
-            binder.AddRule(bindingAction, key, new DebugContextBuilder(debugDescription).CreateContext(typeof(TContext).Name, key), runOnAttach, canOverride, stamped, triggerExpressions);
+            binder.AddRule(bindingAction, key, new DebugContextBuilder(debugDescription).CreateContext(typeof(TContext).Name, key), runOnAttach, canOverride, stampExpression, triggerExpressions);
         }
 
         internal static void BindEvent<TContext>(this Binder<TContext> binder, Action<TContext> eventSubscription)
