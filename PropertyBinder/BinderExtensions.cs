@@ -54,13 +54,13 @@ namespace PropertyBinder
         public static void BindAction<TContext>(this Binder<TContext> binder, Expression<Action<TContext>> expression, string overrideKey = null)
             where TContext : class
         {
-            binder.AddRule(expression.Compile(), overrideKey, new DebugContextBuilder(expression.Body, null).CreateContext(typeof(TContext).Name, overrideKey), true, !string.IsNullOrEmpty(overrideKey), new Expression[] {expression});
+            binder.AddRule(expression.Compile(), overrideKey, new DebugContextBuilder(expression.Body, null).CreateContext(typeof(TContext).Name, overrideKey), true, !string.IsNullOrEmpty(overrideKey), null, new Expression[] {expression});
         }
 
-        public static void AddRule<TContext>(this Binder<TContext> binder, Action<TContext> bindingAction, string key, string debugDescription, bool runOnAttach, bool canOverride, params Expression[] triggerExpressions)
+        public static void AddRule<TContext>(this Binder<TContext> binder, Action<TContext> bindingAction, string key, string debugDescription, bool runOnAttach, bool canOverride, Expression stampExpression, params Expression[] triggerExpressions)
             where TContext : class
         {
-            binder.AddRule(bindingAction, key, new DebugContextBuilder(debugDescription).CreateContext(typeof(TContext).Name, key), runOnAttach, canOverride, triggerExpressions);
+            binder.AddRule(bindingAction, key, new DebugContextBuilder(debugDescription).CreateContext(typeof(TContext).Name, key), runOnAttach, canOverride, stampExpression, triggerExpressions);
         }
 
         internal static void BindEvent<TContext>(this Binder<TContext> binder, Action<TContext> eventSubscription)
@@ -70,7 +70,7 @@ namespace PropertyBinder
             Expression right;
             Action<TContext> unsubscribe;
             MethodAnalyzer.SplitEventExpression(eventSubscription, out left, out right, out unsubscribe);
-            binder.AddRule(null, null, null, true, false, new[] { left, right });
+            binder.AddRule(null, null, null, true, false, null, new[] { left, right });
         }
     }
 }

@@ -65,7 +65,7 @@ namespace PropertyBinder
                 _dependencies.Add(targetParent);
             }
 
-            AddRule(Binder.ExpressionCompiler.Compile(assignment), key);
+            AddRule(Binder.ExpressionCompiler.Compile(assignment), key, assignment);
         }
 
         public void To(Action<TContext, T> action)
@@ -85,12 +85,12 @@ namespace PropertyBinder
                     getValueExpression),
                 contextParameter);
 
-            AddRule(Binder.ExpressionCompiler.Compile(finalExpression), _key);
+            AddRule(Binder.ExpressionCompiler.Compile(finalExpression), _key, finalExpression);
         }
 
-        public void To(Action<TContext> action)
+        public void To(Action<TContext> action, Expression stampExpression)
         {
-            AddRule(action, _key);
+            AddRule(action, _key, stampExpression);
         }
 
         public PropertyRuleBuilder<T, TContext> OverrideKey(string bindingRuleKey)
@@ -128,9 +128,9 @@ namespace PropertyBinder
             _propagateNullValues = value;
         }
 
-        private void AddRule(Action<TContext> action, string key)
+        private void AddRule(Action<TContext> action, string key, Expression stampExpression)
         {
-            _binder.AddRule(_debugAction == null ? action : _debugAction + action, key, _debugContext.CreateContext(typeof(TContext).Name, key), _runOnAttach, _canOverride, _dependencies);
+            _binder.AddRule(_debugAction == null ? action : _debugAction + action, key, _debugContext.CreateContext(typeof(TContext).Name, key), _runOnAttach, _canOverride, stampExpression, _dependencies);
         }
     }
 }

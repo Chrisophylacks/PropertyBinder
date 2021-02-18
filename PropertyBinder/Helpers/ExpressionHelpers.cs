@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Text;
 using PropertyBinder.Engine;
 using PropertyBinder.Visitors;
 
@@ -121,6 +123,88 @@ namespace PropertyBinder.Helpers
             }
 
             return Expression.Block(filteredExpressions);
+        }
+
+        public static Func<TContext, string> Stamped<TContext>(Expression exp)
+        {
+            if (exp == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                List<Expression> list = new List<Expression>();
+                StringBuilder s = new StringBuilder();
+                ScanImpl(exp, list, s);
+                ReadOnlyCollection<ParameterExpression> par = null;
+                if (exp is LambdaExpression le)
+                {
+                    par = le.Parameters;
+                }
+                var mi = typeof(string).GetMethod(nameof(string.Format), new Type[] { typeof(string), typeof(object[]) });
+
+                var formatParamsArrayExpr = Expression.NewArrayInit(typeof(object), list.Select(l => Expression.Convert(l, typeof(object))).ToArray());
+
+
+                MethodCallExpression res = LambdaExpression.Call(null, mi, Expression.Constant(s.ToString()), formatParamsArrayExpr);
+                return par == null ? LambdaExpression.Lambda<Func<TContext, string>>(res).Compile() : LambdaExpression.Lambda<Func<TContext, string>>(res, par).Compile();
+            }
+            catch(Exception e)
+            {
+                System.Diagnostics.Trace.TraceError(e.ToString());
+                return null;
+            }
+        }
+
+        private static void ScanImpl(Expression exp, List<Expression> list, StringBuilder s)
+        {
+            switch (exp)
+            {
+                case BlockExpression be:
+                    foreach (var b in be.Expressions)
+                    {
+                        ScanImpl(b, list, s);
+                    }
+                    break;
+
+                case ConditionalExpression ce:
+                    ScanImpl(ce.Test, list, s);
+                    ScanImpl(ce.IfTrue, list, s);
+                    ScanImpl(ce.IfFalse, list, s);
+                    break;
+
+                case UnaryExpression ue:
+                    ScanImpl(ue.Operand, list, s);
+                    break;
+
+                case MethodCallExpression me:
+                    foreach (var a in me.Arguments)
+                    {
+                        ScanImpl(a, list, s);
+                    }
+                    break;
+
+                case LambdaExpression le:
+                    ScanImpl(le.Body, list, s);
+                    break;
+
+                case BinaryExpression be:
+                    ScanImpl(be.Left, list, s);
+                    ScanImpl(be.Right, list, s);
+                    break;
+
+                case MemberExpression m:
+                    if (list.All(l => (l is MemberExpression me) ? me.Member != m.Member : true))
+                    {
+                        list.Add(m);
+                        s.AppendLine($"{m.Member.Name}: " + "{" + (list.Count - 1) + "};");
+                    }
+
+                    break;
+                default:
+                    break;
+            }
         }
     }
 }

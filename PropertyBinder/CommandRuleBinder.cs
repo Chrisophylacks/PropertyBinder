@@ -67,8 +67,8 @@ namespace PropertyBinder
             var key = _key ?? destinationExpression.GetTargetKey();
             _dependencies.Add(_canExecuteExpression);
 
-            _binder.AddRule(ctx => assignCommand(ctx, new ActionCommand(ctx, _executeAction, canExecute, _hasParameter, _canExecuteCheckMode)), key, _debugContext.CreateContext(typeof(TContext).Name, key), true, true, Enumerable.Empty<LambdaExpression>());
-            _binder.AddRule(ctx => UpdateCanExecuteOnCommand(getCommand(ctx)), key, _debugContext.CreateContext(typeof(TContext).Name, key + "_CanExecute"), true, false, _dependencies);
+            _binder.AddRule(ctx => assignCommand(ctx, new ActionCommand(ctx, _executeAction, canExecute, _hasParameter, _canExecuteCheckMode)), key, _debugContext.CreateContext(typeof(TContext).Name, key), true, true, null, Enumerable.Empty<LambdaExpression>());
+            _binder.AddRule(ctx => UpdateCanExecuteOnCommand(getCommand(ctx)), key, _debugContext.CreateContext(typeof(TContext).Name, key + "_CanExecute"), true, false, null, _dependencies);
         }
 
         private sealed class ActionCommand : ICommand
