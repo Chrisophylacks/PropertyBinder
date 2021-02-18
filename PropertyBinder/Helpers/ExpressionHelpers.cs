@@ -156,13 +156,6 @@ namespace PropertyBinder.Helpers
         {
             switch (exp)
             {
-                /*case ParameterExpression pe:
-                    if (lists.All(l => (l is ParameterExpression p) ? p.Name != p.Name : true))
-                    {
-                        lists.Add(pe);
-                        sb.AppendLine($"{pe.Name}: " + "{" + (lists.Count - 1) + "};");
-                    }
-                    break;*/
                 case BlockExpression be:
                     foreach (var b in be.Expressions)
                     {
