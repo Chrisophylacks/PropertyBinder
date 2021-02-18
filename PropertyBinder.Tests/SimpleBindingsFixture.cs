@@ -285,14 +285,14 @@ namespace PropertyBinder.Tests
         [Test]
         public void ShouldBindToMethod()
         {
-            _binder.Bind(x => x.Int.ToString()).To(x => x.String);
+            _binder.Bind(x => x.String).To(x => x.Int++);
 
             _stub.String = "a";
             using (_binder.Attach(_stub))
             {
-                _stub.Int.ShouldBe(0);
+                _stub.Int.ShouldBe(1);
                 _stub.String = "b";
-                _stub.Int.ShouldBe(0);
+                _stub.Int.ShouldBe(2);
             }
         }
 
