@@ -28,12 +28,6 @@ namespace PropertyBinder
             _dependencies.Add(_sourceExpression.Body);
         }
 
-        // TODO: remove this method completely, it doesn't guarantee type safety at compile time. Unfortunately, that would be a breaking change...
-        public void To(Expression<Func<TContext, T>> targetExpression)
-        {
-            SetTarget(targetExpression);
-        }
-
         internal void SetTarget<TTarget>(Expression<Func<TContext, TTarget>> targetExpression)
         {
             var contextParameter = _sourceExpression.Parameters[0];
@@ -88,9 +82,9 @@ namespace PropertyBinder
             AddRule(Binder.ExpressionCompiler.Compile(finalExpression), _key, finalExpression);
         }
 
-        public void To(Action<TContext> action, Expression stampExpression)
+        public void To(Action<TContext> action)
         {
-            AddRule(action, _key, stampExpression);
+            AddRule(action, _key, _sourceExpression);
         }
 
         public PropertyRuleBuilder<T, TContext> OverrideKey(string bindingRuleKey)
