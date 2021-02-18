@@ -13,56 +13,13 @@ using PropertyBinder.Helpers;
 
 namespace PropertyBinder.Experiments
 {
-    class MyModel
-    {
-        public int a1 { get; set; }
-        public int a2 { get; set; }
-
-        public Inner Inn { get; set; } = new();
-
-        public Expression GetExpression()
-        {
-            bool test = true;
-            //Expression<Func<string>> res = () => ;
-            var res = Expression.IfThen(Expression.Constant(test), Expression.Call(null, typeof(Console).GetMethod("WriteLine", new Type[] { typeof(String) }),
-                /*Expression.Convert(*/Expression.Parameter(typeof(string), "a")/*, typeof(object))*/));//"qwerty" + a1 + a2 + SomeMeth(a1, a2) + Inn);
-            return res;// Expression.Lambda<Action<string>>(res);
-        }
-
-        private static int SomeMeth(int x, int y)
-        {
-            return x - y;
-        }
-
-        public struct Inner
-        {
-            public string Str { get; set; }
-            public string Str2 { get; set; }
-            public override string ToString()
-            {
-                return $"{Str} - {Str2}";
-            }
-        }
-    }
-
     class Program
     {
         static void Main(string[] args)
         {
-            var m = new MyModel();
-            m.Inn = new() { Str = "ZXCV", Str2 = "ASD" };
-            var e = m.GetExpression();
- 
-            //(var lists, var sb) = ExpressionHelpers.Scan(e);
-            
-            //Console.WriteLine(f());
-            m.a1 = 1;
-            m.a2 = 3;
-            //Console.WriteLine(f() + " - " + eRes());
-
             //DebugTest();
             //DebugStackFrameTest();
-            //PerformanceTest();
+            PerformanceTest();
             //DictionaryPerfTest();
             //CreationPerfTest();
         }
