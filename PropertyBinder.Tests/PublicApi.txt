@@ -4,16 +4,36 @@
 [assembly: System.Runtime.InteropServices.ComVisibleAttribute(false)]
 [assembly: System.Runtime.InteropServices.GuidAttribute("f2800cdd-5dd1-4cbf-9808-fc1a00d67c1a")]
 [assembly: System.Runtime.Versioning.TargetFrameworkAttribute(".NETFramework,Version=v4.5", FrameworkDisplayName=".NET Framework 4.5")]
-
 namespace PropertyBinder
 {
-    
     public class static Binder
     {
+        public static bool AllowReuseOfWatchers { get; set; }
         public static bool DebugMode { get; set; }
         public static PropertyBinder.CommandCanExecuteCheckMode DefaultCommandCanExecuteCheckMode { get; set; }
+        public static PropertyBinder.IExpressionCompiler ExpressionCompiler { get; set; }
         public static System.IDisposable BeginTransaction() { }
-        public static void SetTracingMethod(System.Action<string> tracer) { }
+        public static void SetExceptionHandler(System.EventHandler<PropertyBinder.ExceptionEventArgs> exceptionHandler) { }
+        public static void SetTracer(PropertyBinder.Diagnostics.IBindingTracer tracer) { }
+    }
+    public class static BinderExtensions
+    {
+        public static void AddRule<TContext>(this PropertyBinder.Binder<TContext> binder, System.Action<TContext> bindingAction, string key, string debugDescription, bool runOnAttach, bool canOverride, System.Func<TContext, string> stamped, params System.Linq.Expressions.Expression[] triggerExpressions)
+            where TContext :  class { }
+        public static PropertyBinder.PropertyRuleBuilder<T, TContext> Bind<T, TContext>(this PropertyBinder.Binder<TContext> binder, System.Linq.Expressions.Expression<System.Func<TContext, T>> sourceExpression)
+            where TContext :  class { }
+        public static void BindAction<TContext>(this PropertyBinder.Binder<TContext> binder, System.Linq.Expressions.Expression<System.Action<TContext>> expression, string overrideKey = null)
+            where TContext :  class { }
+        public static PropertyBinder.CommandRuleBinder<TContext> BindCommand<TContext>(this PropertyBinder.Binder<TContext> binder, System.Action<TContext> executeAction, System.Linq.Expressions.Expression<System.Func<TContext, bool>> canExecuteExpression)
+            where TContext :  class { }
+        public static PropertyBinder.CommandRuleBinder<TContext> BindCommand<TContext>(this PropertyBinder.Binder<TContext> binder, System.Action<TContext, object> executeAction, System.Linq.Expressions.Expression<System.Func<TContext, object, bool>> canExecuteExpression)
+            where TContext :  class { }
+        public static PropertyBinder.IConditionalRuleBuilderPhase1<T, TContext> BindIf<T, TContext>(this PropertyBinder.Binder<TContext> binder, System.Linq.Expressions.Expression<System.Func<TContext, bool>> conditionalExpression, System.Linq.Expressions.Expression<System.Func<TContext, T>> targetExpression)
+            where TContext :  class { }
+        public static void Unbind<T, TContext>(this PropertyBinder.Binder<TContext> binder, System.Linq.Expressions.Expression<System.Func<TContext, T>> targetExpression)
+            where TContext :  class { }
+        public static void Unbind<TContext>(this PropertyBinder.Binder<TContext> binder, string key)
+            where TContext :  class { }
     }
     public sealed class Binder<TContext>
         where TContext :  class
@@ -24,22 +44,7 @@ namespace PropertyBinder
         public PropertyBinder.Binder<TNewContext> Clone<TNewContext>()
             where TNewContext :  class, TContext { }
         public PropertyBinder.Binder<TContext> Clone() { }
-    }
-    public class static BinderExtensions
-    {
-        public static PropertyBinder.PropertyRuleBuilder<T, TContext> Bind<T, TContext>(this PropertyBinder.Binder<TContext> binder, System.Linq.Expressions.Expression<System.Func<TContext, T>> sourceExpression)
-        
-            where TContext :  class { }
-        public static PropertyBinder.CommandRuleBinder<TContext> BindCommand<TContext>(this PropertyBinder.Binder<TContext> binder, System.Action<TContext> executeAction, System.Linq.Expressions.Expression<System.Func<TContext, bool>> canExecuteExpression)
-            where TContext :  class { }
-        public static PropertyBinder.CommandRuleBinder<TContext> BindCommand<TContext>(this PropertyBinder.Binder<TContext> binder, System.Action<TContext, object> executeAction, System.Linq.Expressions.Expression<System.Func<TContext, object, bool>> canExecuteExpression)
-            where TContext :  class { }
-        public static PropertyBinder.IConditionalRuleBuilderPhase1<T, TContext> BindIf<T, TContext>(this PropertyBinder.Binder<TContext> binder, System.Linq.Expressions.Expression<System.Func<TContext, bool>> conditionalExpression, System.Linq.Expressions.Expression<System.Func<TContext, T>> targetExpression)
-        
-            where TContext :  class { }
-        public static void Unbind<T, TContext>(this PropertyBinder.Binder<TContext> binder, System.Linq.Expressions.Expression<System.Func<TContext, T>> targetExpression)
-        
-            where TContext :  class { }
+        public System.Action<TContext> GetActionByKey(string key) { }
     }
     public sealed class BindingFrame
     {
@@ -61,22 +66,45 @@ namespace PropertyBinder
         public PropertyBinder.CommandRuleBinder<TContext> WithCanExecuteCheckMode(PropertyBinder.CommandCanExecuteCheckMode mode) { }
         public PropertyBinder.CommandRuleBinder<TContext> WithDependency<TDependency>(System.Linq.Expressions.Expression<System.Func<TContext, TDependency>> dependencyExpression) { }
     }
+    public sealed class DefaultExpressionCompiler : PropertyBinder.IExpressionCompiler
+    {
+        public static PropertyBinder.IExpressionCompiler Instance;
+        public T Compile<T>(System.Linq.Expressions.Expression<T> expression) { }
+        public System.Delegate Compile(System.Linq.Expressions.LambdaExpression expression) { }
+    }
+    public class ExceptionEventArgs : System.EventArgs
+    {
+        public string Description { get; }
+        public System.Exception Exception { get; }
+        public bool Handled { get; set; }
+        public string StampedStr { get; }
+    }
     public interface IConditionalRuleBuilderPhase1<T, TContext> : PropertyBinder.IConditionalRuleBuilderPhase2<T, TContext>
-    
         where TContext :  class
     {
         PropertyBinder.IConditionalRuleBuilderPhase2<T, TContext> Else(System.Linq.Expressions.Expression<System.Func<TContext, T>> targetExpression);
         PropertyBinder.IConditionalRuleBuilderPhase1<T, TContext> ElseIf(System.Linq.Expressions.Expression<System.Func<TContext, bool>> conditionalExpression, System.Linq.Expressions.Expression<System.Func<TContext, T>> targetExpression);
     }
     public interface IConditionalRuleBuilderPhase2<T, TContext>
-    
         where TContext :  class
     {
+        PropertyBinder.IConditionalRuleBuilderPhase2<T, TContext> Debug(System.Action<TContext> debugAction);
         PropertyBinder.IConditionalRuleBuilderPhase2<T, TContext> DoNotOverride();
         PropertyBinder.IConditionalRuleBuilderPhase2<T, TContext> DoNotRunOnAttach();
         PropertyBinder.IConditionalRuleBuilderPhase2<T, TContext> OverrideKey(string bindingRuleKey);
         void To(System.Linq.Expressions.Expression<System.Func<TContext, T>> targetExpression);
         void To(System.Action<TContext, T> action);
+        PropertyBinder.IConditionalRuleBuilderPhase2<T, TContext> WithDependency<TDependency>(System.Linq.Expressions.Expression<System.Func<TContext, TDependency>> dependencyExpression);
+    }
+    public interface IExpressionCompiler
+    {
+        T Compile<T>(System.Linq.Expressions.Expression<T> expression);
+        System.Delegate Compile(System.Linq.Expressions.LambdaExpression expression);
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Property | System.AttributeTargets.All, AllowMultiple=false, Inherited=false)]
+    public sealed class ImmutableAttribute : System.Attribute
+    {
+        public ImmutableAttribute() { }
     }
     public class static PropertyBinderExtensions
     {
@@ -94,7 +122,6 @@ namespace PropertyBinder
             where TContext :  class { }
     }
     public sealed class PropertyRuleBuilder<T, TContext>
-    
         where TContext :  class
     {
         public PropertyBinder.PropertyRuleBuilder<T, TContext> Debug(System.Action<TContext> debugAction) { }
@@ -103,7 +130,29 @@ namespace PropertyBinder
         public PropertyBinder.PropertyRuleBuilder<T, TContext> OverrideKey(string bindingRuleKey) { }
         public void To(System.Linq.Expressions.Expression<System.Func<TContext, T>> targetExpression) { }
         public void To(System.Action<TContext, T> action) { }
-        public void To(System.Action<TContext> action) { }
+        public void To(System.Action<TContext> action, System.Func<TContext, string> stamped) { }
         public PropertyBinder.PropertyRuleBuilder<T, TContext> WithDependency<TDependency>(System.Linq.Expressions.Expression<System.Func<TContext, TDependency>> dependencyExpression) { }
+    }
+}
+namespace PropertyBinder.Diagnostics
+{
+    public interface IBindingTracer
+    {
+        void OnEnded(string bindingDescription);
+        void OnException(System.Exception ex);
+        void OnIgnored(string bindingDescription);
+        void OnScheduled(string bindingDescription);
+        void OnStarted(string bindingDescription);
+    }
+    public sealed class StopwatchTracer : PropertyBinder.Diagnostics.IBindingTracer
+    {
+        public StopwatchTracer() { }
+        public System.TimeSpan Elapsed { get; }
+        public void OnEnded(string bindingDescription) { }
+        public void OnException(System.Exception ex) { }
+        public void OnIgnored(string bindingDescription) { }
+        public void OnScheduled(string bindingDescription) { }
+        public void OnStarted(string bindingDescription) { }
+        public void Reset() { }
     }
 }

@@ -14,6 +14,8 @@ namespace PropertyBinder.Engine
 
         public abstract void Execute(int index);
 
+        public abstract string GetStamp(int index);
+
         public abstract DebugContext GetDebugContext(int index);
     }
 
@@ -40,6 +42,11 @@ namespace PropertyBinder.Engine
             _actions[index].Action(_context);
         }
 
+        public override string GetStamp(int index)
+        {
+            return _actions[index].Stamped?.Invoke(_context) ?? "";
+        }
+
         public override DebugContext GetDebugContext(int index)
         {
             return _actions[index].DebugContext;
@@ -61,6 +68,12 @@ namespace PropertyBinder.Engine
         public override void Execute(int index)
         {
         }
+
+        public override string GetStamp(int index)
+        {
+            return "";
+        }
+
 
         public override DebugContext GetDebugContext(int index)
         {

@@ -34,7 +34,7 @@ namespace PropertyBinder
         {
             return new Binder<TNewContext>(
                 _rootNode.CloneForDerivedParentType<TNewContext>(),
-                _actions.Select(x => x != null ? new Binder<TNewContext>.BindingAction(x.Action, x.Key, x.DebugContext, x.RunOnAttach) : null).ToList());
+                _actions.Select(x => x != null ? new Binder<TNewContext>.BindingAction(x.Action, x.Key, x.DebugContext, x.RunOnAttach, x.Stamped) : null).ToList());
         }
 
         public Binder<TContext> Clone()
@@ -47,7 +47,8 @@ namespace PropertyBinder
             return Binder.BeginTransaction();
         }
 
-        internal void AddRule(Action<TContext> bindingAction, string key, DebugContext debugContext, bool runOnAttach, bool canOverride, IEnumerable<Expression> triggerExpressions)
+        internal void AddRule(Action<TContext> bindingAction, string key, DebugContext debugContext, bool runOnAttach, bool canOverride,
+            Func<TContext, string> stamped, IEnumerable<Expression> triggerExpressions)
         {
             if (_factory != null)
             {
@@ -59,7 +60,7 @@ namespace PropertyBinder
                 RemoveRule(key);
             }
 
-            _actions.Add(new BindingAction(bindingAction, key, debugContext, runOnAttach));
+            _actions.Add(new BindingAction(bindingAction, key, debugContext, runOnAttach, stamped));
 
             foreach (var expr in triggerExpressions)
             {
@@ -137,7 +138,16 @@ namespace PropertyBinder
                     }
                     catch (Exception ex)
                     {
-                        var ea = new ExceptionEventArgs(ex);
+                        ExceptionEventArgs ea;
+                        try 
+                        {
+                            ea = new ExceptionEventArgs(ex, action.Stamped?.Invoke(context) ?? "");
+                        }
+                        catch
+                        {
+                            ea = new ExceptionEventArgs(ex, "");
+                        }
+
                         Binder.ExceptionHandler?.Invoke(this, ea);
                         if (!ea.Handled)
                         {
@@ -152,12 +162,13 @@ namespace PropertyBinder
 
         internal sealed class BindingAction
         {
-            public BindingAction(Action<TContext> action, string key, DebugContext debugContext, bool runOnAttach)
+            public BindingAction(Action<TContext> action, string key, DebugContext debugContext, bool runOnAttach, Func<TContext, string> stamped)
             {
                 Action = action;
                 Key = key;
                 DebugContext = debugContext;
                 RunOnAttach = runOnAttach;
+                Stamped = stamped;
             }
 
             public readonly Action<TContext> Action;
@@ -167,8 +178,9 @@ namespace PropertyBinder
             public readonly string Key;
 
             public readonly DebugContext DebugContext;
-        }
 
+            public readonly Func<TContext, string> Stamped;
+        }
     }
 
     public static class Binder

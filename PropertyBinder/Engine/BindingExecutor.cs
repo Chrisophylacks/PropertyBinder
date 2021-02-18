@@ -111,7 +111,15 @@ namespace PropertyBinder.Engine
                         }
                         catch (Exception e)
                         {
-                            var exceptionEventArgs = new ExceptionEventArgs(e, binding.DebugContext);
+                            ExceptionEventArgs exceptionEventArgs;
+                            try
+                            {
+                                exceptionEventArgs = new ExceptionEventArgs(e, binding.GetStamp(), binding.DebugContext);
+                            }
+                            catch
+                            {
+                                exceptionEventArgs = new ExceptionEventArgs(e, "", binding.DebugContext);
+                            }
                             _exceptionHandler?.Invoke(null, exceptionEventArgs);
                             if (!exceptionEventArgs.Handled)
                             {
@@ -208,7 +216,15 @@ namespace PropertyBinder.Engine
                         catch (Exception ex)
                         {
                             _tracer?.OnException(ex);
-                            var ea = new ExceptionEventArgs(ex, _executingBinding.Binding.DebugContext);
+                            ExceptionEventArgs ea;
+                            try
+                            {
+                                ea = new ExceptionEventArgs(ex, _executingBinding.Binding.GetStamp(), _executingBinding.Binding.DebugContext);
+                            }
+                            catch
+                            {
+                                ea = new ExceptionEventArgs(ex, "", _executingBinding.Binding.DebugContext);
+                            }
                             _exceptionHandler?.Invoke(this, ea);
                             if (!ea.Handled)
                             {
@@ -285,6 +301,11 @@ namespace PropertyBinder.Engine
         public void Execute()
         {
             Map.Execute(Index);
+        }
+
+        public string GetStamp()
+        {
+            return Map.GetStamp(Index);
         }
 
         public DebugContext DebugContext

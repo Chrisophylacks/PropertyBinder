@@ -127,7 +127,7 @@ namespace PropertyBinder
 
                 dependencies.AddRange(_dependencies);
 
-                _binder.AddRule(assignment, key, _clauses[i].Item3.CreateContext(typeof(TContext).Name, key), _runOnAttach, i == 0 && _canOverride, dependencies);
+                _binder.AddRule(assignment, key, _clauses[i].Item3.CreateContext(typeof(TContext).Name, key), _runOnAttach, i == 0 && _canOverride, ExpressionHelpers.Stamped<TContext>(assignmentExpression), dependencies);
             }
         }
 
@@ -163,7 +163,7 @@ namespace PropertyBinder
                 _binder.AddRule(ctx =>
                     {
                         invoke(ctx, action);
-                    }, _key, _clauses[i].Item3.CreateContext(typeof(TContext).Name, _key), _runOnAttach, i == 0 && _canOverride, new[] { invokeExpression }.Concat(_dependencies));
+                    }, _key, _clauses[i].Item3.CreateContext(typeof(TContext).Name, _key), _runOnAttach, i == 0 && _canOverride, ExpressionHelpers.Stamped<TContext>(invokeExpression), new[] { invokeExpression }.Concat(_dependencies));
             }
         }
 
